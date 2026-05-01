@@ -26,6 +26,8 @@
       "Action": "ec2:DescribeInstances",
       "Resource": "*"
     },
+    {
+      "Sid": "SsmSend",
       "Effect": "Allow",
       "Action": "ssm:SendCommand",
       "Resource": [

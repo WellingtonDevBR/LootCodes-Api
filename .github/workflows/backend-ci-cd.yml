@@ -114,7 +114,7 @@ jobs:
             ec2_code=$?
             set -e
             if [ "$ec2_code" -ne 0 ]; then
-              echo "::error::aws ec2 describe-instances failed for $id (exit $ec2_code). If you see AccessDenied, add ec2:DescribeInstances to the OIDC deploy role (deploy/github-actions-deploy-role-policy.example.json). Otherwise fix region/account/instance id."
+              echo "::error::aws ec2 describe-instances failed for $id (exit $ec2_code). IAM: attach deploy/iam-add-ec2-describe-to-github-deploy-role.json to role GitHubActionsLootCodesApiDeploy (IAM → Roles → Permissions → Add permissions → Create inline policy → JSON). Full example: deploy/github-actions-deploy-role-policy.example.json"
               cat "$errf" >&2 || true
               rm -f "$errf"
               FAIL=1
