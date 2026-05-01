@@ -117,6 +117,8 @@ export const UC_TOKENS = {
   GetUserOrders: Symbol.for('GetUserOrdersUseCase'),
   GetUserOrdersForSupport: Symbol.for('GetUserOrdersForSupportUseCase'),
   ValidateAccessToken: Symbol.for('ValidateAccessTokenUseCase'),
+  GenerateAccessToken: Symbol.for('GenerateAccessTokenUseCase'),
+  RefreshAccessToken: Symbol.for('RefreshAccessTokenUseCase'),
   ClaimGuestOrder: Symbol.for('ClaimGuestOrderUseCase'),
 
   // Key delivery use cases
@@ -232,6 +234,7 @@ export const UC_TOKENS = {
   GetReferralMe: Symbol.for('GetReferralMeUseCase'),
   ListReferrals: Symbol.for('ListReferralsUseCase'),
   GetLeaderboard: Symbol.for('GetLeaderboardUseCase'),
+  OpenDispute: Symbol.for('OpenDisputeUseCase'),
 
   // Newsletter use cases
   Subscribe: Symbol.for('SubscribeUseCase'),

@@ -4,6 +4,8 @@ import { UC_TOKENS } from '../../di/tokens.js';
 import type { GetOrderDetailUseCase } from '../../core/use-cases/orders/get-order-detail.use-case.js';
 import type { GetUserOrdersUseCase } from '../../core/use-cases/orders/get-user-orders.use-case.js';
 import type { ValidateAccessTokenUseCase } from '../../core/use-cases/orders/validate-access-token.use-case.js';
+import type { GenerateAccessTokenUseCase } from '../../core/use-cases/orders/generate-access-token.use-case.js';
+import type { RefreshAccessTokenUseCase } from '../../core/use-cases/orders/refresh-access-token.use-case.js';
 import type { ClaimGuestOrderUseCase } from '../../core/use-cases/orders/claim-guest-order.use-case.js';
 import type { LogAccessAttemptUseCase } from '../../core/use-cases/orders/log-access-attempt.use-case.js';
 import type { GetKeysForOrderUseCase } from '../../core/use-cases/key-delivery/get-keys-for-order.use-case.js';
@@ -20,6 +22,8 @@ import {
   revealKeyBodySchema,
   checkKeyViewedQuerySchema,
   validateAccessTokenBodySchema,
+  generateAccessTokenBodySchema,
+  refreshAccessTokenBodySchema,
   claimGuestOrderBodySchema,
   logKeyViewBodySchema,
   logAccessAttemptBodySchema,
@@ -165,6 +169,33 @@ export async function orderRoutes(app: FastifyInstance) {
 
       await uc.execute(request.body.token, user.id);
       return reply.send({ success: true });
+    },
+  );
+
+  app.post<{ Body: { order_id: string; email: string } }>(
+    '/access/generate',
+    {
+      schema: { body: generateAccessTokenBodySchema },
+    },
+    async (request, reply) => {
+      const uc = container.resolve<GenerateAccessTokenUseCase>(UC_TOKENS.GenerateAccessToken);
+      const { order_id, email } = request.body;
+
+      const accessToken = await uc.execute(order_id, email);
+      return reply.send(accessToken);
+    },
+  );
+
+  app.post<{ Body: { token: string } }>(
+    '/access/refresh',
+    {
+      schema: { body: refreshAccessTokenBodySchema },
+    },
+    async (request, reply) => {
+      const uc = container.resolve<RefreshAccessTokenUseCase>(UC_TOKENS.RefreshAccessToken);
+
+      const accessToken = await uc.execute(request.body.token);
+      return reply.send(accessToken);
     },
   );
 

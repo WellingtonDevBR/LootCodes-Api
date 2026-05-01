@@ -115,6 +115,8 @@ import { GetOrderDetailUseCase } from '../core/use-cases/orders/get-order-detail
 import { GetUserOrdersUseCase } from '../core/use-cases/orders/get-user-orders.use-case.js';
 import { GetUserOrdersForSupportUseCase } from '../core/use-cases/orders/get-user-orders-for-support.use-case.js';
 import { ValidateAccessTokenUseCase } from '../core/use-cases/orders/validate-access-token.use-case.js';
+import { GenerateAccessTokenUseCase } from '../core/use-cases/orders/generate-access-token.use-case.js';
+import { RefreshAccessTokenUseCase } from '../core/use-cases/orders/refresh-access-token.use-case.js';
 import { ClaimGuestOrderUseCase } from '../core/use-cases/orders/claim-guest-order.use-case.js';
 
 // --- Key delivery use cases ---
@@ -227,6 +229,7 @@ import { ClaimReviewRewardUseCase } from '../core/use-cases/wallet/claim-review-
 import { GetReferralMeUseCase } from '../core/use-cases/referrals/get-referral-me.use-case.js';
 import { ListReferralsUseCase } from '../core/use-cases/referrals/list-referrals.use-case.js';
 import { GetLeaderboardUseCase } from '../core/use-cases/referrals/get-leaderboard.use-case.js';
+import { OpenDisputeUseCase } from '../core/use-cases/referrals/open-dispute.use-case.js';
 
 // --- Newsletter use cases ---
 import { SubscribeUseCase } from '../core/use-cases/newsletter/subscribe.use-case.js';
@@ -407,6 +410,8 @@ container.register(UC_TOKENS.GetOrderDetail, { useClass: GetOrderDetailUseCase }
 container.register(UC_TOKENS.GetUserOrders, { useClass: GetUserOrdersUseCase });
 container.register(UC_TOKENS.GetUserOrdersForSupport, { useClass: GetUserOrdersForSupportUseCase });
 container.register(UC_TOKENS.ValidateAccessToken, { useClass: ValidateAccessTokenUseCase });
+container.register(UC_TOKENS.GenerateAccessToken, { useClass: GenerateAccessTokenUseCase });
+container.register(UC_TOKENS.RefreshAccessToken, { useClass: RefreshAccessTokenUseCase });
 container.register(UC_TOKENS.ClaimGuestOrder, { useClass: ClaimGuestOrderUseCase });
 
 // --- Key Delivery Use Cases ---
@@ -519,6 +524,7 @@ container.register(UC_TOKENS.ClaimReviewReward, { useClass: ClaimReviewRewardUse
 container.register(UC_TOKENS.GetReferralMe, { useClass: GetReferralMeUseCase });
 container.register(UC_TOKENS.ListReferrals, { useClass: ListReferralsUseCase });
 container.register(UC_TOKENS.GetLeaderboard, { useClass: GetLeaderboardUseCase });
+container.register(UC_TOKENS.OpenDispute, { useClass: OpenDisputeUseCase });
 
 // --- Newsletter Use Cases ---
 container.register(UC_TOKENS.Subscribe, { useClass: SubscribeUseCase });

@@ -93,3 +93,22 @@ export const logAccessAttemptBodySchema = {
   },
   additionalProperties: false,
 } as const;
+
+export const generateAccessTokenBodySchema = {
+  type: 'object',
+  required: ['order_id', 'email'],
+  properties: {
+    order_id: { type: 'string', format: 'uuid' },
+    email: { type: 'string', format: 'email', maxLength: 254 },
+  },
+  additionalProperties: false,
+} as const;
+
+export const refreshAccessTokenBodySchema = {
+  type: 'object',
+  required: ['token'],
+  properties: {
+    token: { type: 'string', minLength: 1 },
+  },
+  additionalProperties: false,
+} as const;
