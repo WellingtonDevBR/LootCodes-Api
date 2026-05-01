@@ -3,6 +3,24 @@ dist/
 .env
 .env.*
 !.env.example
+.sentryclirc
 *.log
 coverage/
 .DS_Store
+deploy/.aws-gen/
+
+# Local secrets — never commit private keys
+*.pem
+
+# Cursor / IDE
+.cursor/
+
+# Terraform
+deploy/terraform/.terraform/
+deploy/terraform/*.tfstate
+deploy/terraform/*.tfstate.*
+deploy/terraform/*.tfvars
+!deploy/terraform/terraform.tfvars.example
+crash.log
+override.tf
+override.tf.json
