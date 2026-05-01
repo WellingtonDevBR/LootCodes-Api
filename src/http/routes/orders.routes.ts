@@ -1,16 +1,15 @@
 import type { FastifyInstance } from 'fastify';
 import { container } from 'tsyringe';
-import { TOKENS, UC_TOKENS } from '../../di/tokens.js';
-import type { GetOrderUseCase } from '../../core/use-cases/orders/get-order.use-case.js';
+import { UC_TOKENS } from '../../di/tokens.js';
 import type { GetOrderDetailUseCase } from '../../core/use-cases/orders/get-order-detail.use-case.js';
 import type { GetUserOrdersUseCase } from '../../core/use-cases/orders/get-user-orders.use-case.js';
 import type { ValidateAccessTokenUseCase } from '../../core/use-cases/orders/validate-access-token.use-case.js';
 import type { ClaimGuestOrderUseCase } from '../../core/use-cases/orders/claim-guest-order.use-case.js';
+import type { LogAccessAttemptUseCase } from '../../core/use-cases/orders/log-access-attempt.use-case.js';
 import type { GetKeysForOrderUseCase } from '../../core/use-cases/key-delivery/get-keys-for-order.use-case.js';
 import type { GetKeysForOrderItemUseCase } from '../../core/use-cases/key-delivery/get-keys-for-order-item.use-case.js';
 import type { RevealKeyUseCase } from '../../core/use-cases/key-delivery/reveal-key.use-case.js';
 import type { CheckKeyViewedUseCase } from '../../core/use-cases/key-delivery/check-key-viewed.use-case.js';
-import type { IProductKeyRepository } from '../../core/ports/product-key-repository.port.js';
 import { authGuard } from '../middleware/auth.guard.js';
 import { buildRequestContext } from '../middleware/request-context.js';
 import {
@@ -198,16 +197,8 @@ export async function orderRoutes(app: FastifyInstance) {
       schema: { body: logAccessAttemptBodySchema },
     },
     async (request, reply) => {
-      const productKeyRepo = container.resolve<IProductKeyRepository>(TOKENS.ProductKeyRepository);
-
-      await productKeyRepo.logAccessAttempt({
-        token: request.body.token,
-        order_id: request.body.order_id,
-        email: request.body.email,
-        success: request.body.success,
-        failure_reason: request.body.failure_reason,
-      });
-
+      const uc = container.resolve<LogAccessAttemptUseCase>(UC_TOKENS.LogAccessAttempt);
+      await uc.execute(request.body);
       return reply.send({ success: true });
     },
   );

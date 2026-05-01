@@ -1,8 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import { container } from 'tsyringe';
-import { TOKENS, UC_TOKENS } from '../../di/tokens.js';
-import type { IPricingRepository } from '../../core/ports/pricing-repository.port.js';
+import { UC_TOKENS } from '../../di/tokens.js';
 import type { GeolocateUseCase } from '../../core/use-cases/analytics/geolocate.use-case.js';
+import type { ConvertCartPricesUseCase } from '../../core/use-cases/products/pricing/convert-cart-prices.use-case.js';
 import type { GetActivePromoHeaderUseCase } from '../../core/use-cases/products/storefront/get-active-promo-header.use-case.js';
 import type { GetTrustpilotDataUseCase } from '../../core/use-cases/products/storefront/get-trustpilot-data.use-case.js';
 import type { ClaimReviewRewardUseCase } from '../../core/use-cases/wallet/claim-review-reward.use-case.js';
@@ -51,14 +51,9 @@ export async function storefrontRoutes(app: FastifyInstance) {
       },
     },
     async (request, reply) => {
-      const pricingRepo = container.resolve<IPricingRepository>(TOKENS.PricingRepository);
-      const prices = await pricingRepo.getBatchPrices(request.body.variant_ids, request.body.currency);
-      const result: Record<string, { price_cents: number; currency: string } | null> = {};
-      for (const id of request.body.variant_ids) {
-        const entry = prices.get(id);
-        result[id] = entry ? { price_cents: entry.price_cents, currency: entry.currency } : null;
-      }
-      return reply.send({ prices: result });
+      const uc = container.resolve<ConvertCartPricesUseCase>(UC_TOKENS.ConvertCartPrices);
+      const prices = await uc.execute(request.body);
+      return reply.send({ prices });
     },
   );
 

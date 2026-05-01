@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { container } from 'tsyringe';
-import { TOKENS, UC_TOKENS } from '../../di/tokens.js';
-import type { IGuestSessionRepository } from '../../core/ports/guest-session.port.js';
+import { UC_TOKENS } from '../../di/tokens.js';
+import type { ExchangeGuestSessionUseCase } from '../../core/use-cases/guest/exchange-guest-session.use-case.js';
 import type { GetGuestOrderUseCase } from '../../core/use-cases/guest/get-guest-order.use-case.js';
 import type { GetGuestOrderKeysUseCase } from '../../core/use-cases/guest/get-guest-order-keys.use-case.js';
 import type { RevealGuestKeyUseCase } from '../../core/use-cases/guest/reveal-guest-key.use-case.js';
@@ -41,22 +41,9 @@ export async function guestRoutes(app: FastifyInstance) {
     '/session',
     { schema: { body: guestSessionExchangeBodySchema } },
     async (request, reply) => {
-      const guestSessionRepo = container.resolve<IGuestSessionRepository>(TOKENS.GuestSessionRepository);
-      const session = await guestSessionRepo.exchangeToken(request.body.token);
-
-      if (!session) {
-        throw new AuthenticationError('Invalid or expired guest token');
-      }
-
-      if (request.body.order_id && session.order_id !== request.body.order_id) {
-        throw new AuthenticationError('Token does not match the provided order');
-      }
-
-      return reply.send({
-        email: session.email,
-        order_id: session.order_id,
-        expires_at: session.expires_at,
-      });
+      const uc = container.resolve<ExchangeGuestSessionUseCase>(UC_TOKENS.ExchangeGuestSession);
+      const result = await uc.execute(request.body);
+      return reply.send(result);
     },
   );
 
