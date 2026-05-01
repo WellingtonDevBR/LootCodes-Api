@@ -21,6 +21,7 @@ deploy/terraform/*.tfstate
 deploy/terraform/*.tfstate.*
 deploy/terraform/*.tfvars
 !deploy/terraform/terraform.tfvars.example
+deploy/terraform/tfplan.binary
 crash.log
 override.tf
 override.tf.json
