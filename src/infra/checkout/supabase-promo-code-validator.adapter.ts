@@ -2,7 +2,7 @@ import { injectable, inject } from 'tsyringe';
 import { TOKENS } from '../../di/tokens.js';
 import type { IDatabase } from '../../core/ports/database.port.js';
 import type { IPromoCodeValidator } from '../../core/ports/promo-code-validator.port.js';
-import type { PromoValidationResult, CartItem } from '../../core/services/checkout/checkout.types.js';
+import type { PromoValidationResult, CartItem } from '../../core/use-cases/checkout/checkout.types.js';
 
 @injectable()
 export class SupabasePromoCodeValidatorAdapter implements IPromoCodeValidator {

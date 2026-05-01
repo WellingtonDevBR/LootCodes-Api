@@ -1,6 +1,6 @@
 import { injectable } from 'tsyringe';
 import type { IGeoService } from '../../core/ports/geo-service.port.js';
-import type { GeoLookupResult } from '../../core/services/analytics/analytics.types.js';
+import type { GeoLookupResult } from '../../core/use-cases/analytics/analytics.types.js';
 import { createLogger } from '../../shared/logger.js';
 
 const logger = createLogger('stub-geo-service');

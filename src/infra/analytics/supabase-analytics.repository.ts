@@ -2,7 +2,7 @@ import { injectable, inject } from 'tsyringe';
 import { TOKENS } from '../../di/tokens.js';
 import type { IDatabase } from '../../core/ports/database.port.js';
 import type { IAnalyticsRepository } from '../../core/ports/analytics-repository.port.js';
-import type { PageViewEvent, ActivityEvent, CartEvent, SessionOutcomeDto } from '../../core/services/analytics/analytics.types.js';
+import type { PageViewEvent, ActivityEvent, CartEvent, SessionOutcomeDto, ProductViewDurationDto, SearchEventDto } from '../../core/use-cases/analytics/analytics.types.js';
 import { createLogger } from '../../shared/logger.js';
 
 const logger = createLogger('supabase-analytics-repository');
@@ -54,5 +54,26 @@ export class SupabaseAnalyticsRepository implements IAnalyticsRepository {
       final_outcome: dto.outcome,
       conversion_value: dto.conversion_value,
     });
+  }
+
+  async trackProductViewDuration(data: ProductViewDurationDto & { user_id?: string }): Promise<void> {
+    await this.db.insert('product_views', {
+      session_id: data.session_id,
+      product_id: data.product_id,
+      variant_id: data.variant_id,
+      user_id: data.user_id,
+      duration_seconds: data.duration_seconds,
+    });
+    logger.debug('Product view duration inserted', { productId: data.product_id });
+  }
+
+  async trackSearchEvent(data: SearchEventDto): Promise<void> {
+    await this.db.insert('search_analytics', {
+      session_id: data.session_id,
+      query: data.query,
+      results_count: data.results_count,
+      filters: data.filters,
+    });
+    logger.debug('Search event inserted', { query: data.query });
   }
 }

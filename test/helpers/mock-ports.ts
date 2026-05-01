@@ -44,23 +44,30 @@ import type { IPaymentCapturer } from '../../src/core/ports/payment-capturer.por
 import type { IWebhookVerifier } from '../../src/core/ports/webhook-verifier.port.js';
 import type { IWebhookHandler } from '../../src/core/ports/webhook-handler.port.js';
 import type { IGuestSessionRepository, GuestSession } from '../../src/core/ports/guest-session.port.js';
+import type { ICategoryRepository } from '../../src/core/ports/category-repository.port.js';
+import type { IPricingRepository } from '../../src/core/ports/pricing-repository.port.js';
+import type { IGeoRestrictionRepository } from '../../src/core/ports/geo-restriction-repository.port.js';
+import type { IRecommendationRepository } from '../../src/core/ports/recommendation-repository.port.js';
+import type { ISearchProvider } from '../../src/core/ports/search-provider.port.js';
+import type { Category, LocalizedPrice, ExcludedCountry, RestrictedVariant, RestrictedRegion, PlatformNavItem, PlatformFamily, RecommendedProduct, PopularProduct, RecommendationsBatch } from '../../src/core/use-cases/products/product.types.js';
+import type { SearchResult } from '../../src/core/use-cases/search/search.types.js';
 
-import type { UserProfile, UpsertProfileDto, UserSession, UpsertSessionDto } from '../../src/core/services/profile/profile.types.js';
-import type { Order, OrderItem, OrderDetail, ProductKey, KeyViewLog, OrderAccessToken, PaginationParams } from '../../src/core/services/orders/order.types.js';
-import type { CartItem, PromoValidationResult, StockCheckResult as CheckoutStockResult } from '../../src/core/services/checkout/checkout.types.js';
-import type { SupportTicket, TicketMessage, TicketDetail, CreateTicketDto, TicketFeedbackDto } from '../../src/core/services/support/support.types.js';
-import type { LibraryEntry, SetLibraryStatusDto, UpdateLibraryEntryDto } from '../../src/core/services/library/library.types.js';
-import type { Notification, NotificationPreferences, UpdatePreferencesDto } from '../../src/core/services/notifications/notification.types.js';
-import type { Review, ProductRating, CreateReviewDto, ReviewEligibility, ReviewPaginationParams } from '../../src/core/services/reviews/review.types.js';
-import type { ProductPageData, Product, ProductVariant, GalleryItem, FeaturedProduct, StockCheckItem, StockCheckResult, Platform, Region, Genre, FAQ } from '../../src/core/services/products/product.types.js';
-import type { PageViewEvent, ActivityEvent, CartEvent, SessionOutcomeDto, GeoLookupResult } from '../../src/core/services/analytics/analytics.types.js';
-import type { WalletBalance, WalletLedgerEntry, LedgerPaginationParams, OrderEarnings } from '../../src/core/services/wallet/wallet.types.js';
-import type { ReferralMe, ReferralListPage, ReferralLeaderboardEntry, ListReferralsParams, GetLeaderboardParams, OpenDisputeParams, OpenDisputeResult } from '../../src/core/services/referrals/referral.types.js';
-import type { NewsletterSubscribeDto, NewsletterResult } from '../../src/core/services/newsletter/newsletter.types.js';
-import type { SecurityHold, SecurityHoldStatus, SubmitHoldResponseDto } from '../../src/core/services/security/security.types.js';
-import type { CardChallenge, StartChallengeDto, VerifyChallengeDto, VerifyChallengeResult, ChooseIdResult } from '../../src/core/services/card-challenge/card-challenge.types.js';
-import type { PriceMatchClaim, PriceMatchClaimSubmission, PriceMatchClaimResult, PriceMatchConfig } from '../../src/core/services/price-match/price-match.types.js';
-import type { VerifyPaymentDto, PaymentVerificationResult, RiskAssessment, RiskAssessmentInput, FulfillmentResult, CapturePaymentDto, CaptureResult, WebhookEvent, WebhookProcessResult } from '../../src/core/services/payments/payment.types.js';
+import type { UserProfile, UpsertProfileDto, UserSession, UpsertSessionDto } from '../../src/core/use-cases/profile/profile.types.js';
+import type { Order, OrderItem, OrderDetail, ProductKey, KeyViewLog, KeyAccessAttemptLog, OrderAccessToken, PaginationParams } from '../../src/core/use-cases/orders/order.types.js';
+import type { CartItem, PromoValidationResult, StockCheckResult as CheckoutStockResult } from '../../src/core/use-cases/checkout/checkout.types.js';
+import type { SupportTicket, TicketMessage, TicketDetail, CreateTicketDto, TicketFeedbackDto } from '../../src/core/use-cases/support/support.types.js';
+import type { LibraryEntry, SetLibraryStatusDto, UpdateLibraryEntryDto } from '../../src/core/use-cases/library/library.types.js';
+import type { Notification, NotificationPreferences, UpdatePreferencesDto } from '../../src/core/use-cases/notifications/notification.types.js';
+import type { Review, ProductRating, CreateReviewDto, ReviewEligibility, ReviewPaginationParams } from '../../src/core/use-cases/reviews/review.types.js';
+import type { ProductPageData, Product, ProductVariant, GalleryItem, FeaturedProduct, StockCheckItem, StockCheckResult, Platform, Region, Genre, FAQ } from '../../src/core/use-cases/products/product.types.js';
+import type { PageViewEvent, ActivityEvent, CartEvent, SessionOutcomeDto, GeoLookupResult, ProductViewDurationDto, SearchEventDto } from '../../src/core/use-cases/analytics/analytics.types.js';
+import type { WalletBalance, WalletLedgerEntry, LedgerPaginationParams, OrderEarnings } from '../../src/core/use-cases/wallet/wallet.types.js';
+import type { ReferralMe, ReferralListPage, ReferralLeaderboardEntry, ListReferralsParams, GetLeaderboardParams, OpenDisputeParams, OpenDisputeResult } from '../../src/core/use-cases/referrals/referral.types.js';
+import type { NewsletterSubscribeDto, NewsletterResult } from '../../src/core/use-cases/newsletter/newsletter.types.js';
+import type { SecurityHold, SecurityHoldStatus, SubmitHoldResponseDto } from '../../src/core/use-cases/security/security.types.js';
+import type { CardChallenge, StartChallengeDto, VerifyChallengeDto, VerifyChallengeResult, ChooseIdResult } from '../../src/core/use-cases/card-challenge/card-challenge.types.js';
+import type { PriceMatchClaim, PriceMatchClaimSubmission, PriceMatchClaimResult, PriceMatchConfig } from '../../src/core/use-cases/price-match/price-match.types.js';
+import type { VerifyPaymentDto, PaymentVerificationResult, RiskAssessment, RiskAssessmentInput, FulfillmentResult, CapturePaymentDto, CaptureResult, WebhookEvent, WebhookProcessResult } from '../../src/core/use-cases/payments/payment.types.js';
 
 // ─── Infrastructure ──────────────────────────────────────────────
 
@@ -161,6 +168,11 @@ export class MockUserProfileRepository implements IUserProfileRepository {
     return updated;
   }
   async deleteProfile(userId: string): Promise<void> { this.profiles.delete(userId); }
+  async restoreProfile(userId: string): Promise<void> {
+    if (!this.profiles.has(userId)) {
+      this.profiles.set(userId, { id: `profile-${userId}`, user_id: userId });
+    }
+  }
   async checkDeleted(userId: string): Promise<boolean> { return !this.profiles.has(userId); }
   async getRole(_userId: string): Promise<string | null> { return 'user'; }
 }
@@ -207,6 +219,7 @@ export class MockProductKeyRepository implements IProductKeyRepository {
   async decryptKey(_keyId: string): Promise<string> { return 'DECRYPTED-KEY-VALUE'; }
   async logKeyView(_log: KeyViewLog): Promise<void> {}
   async checkKeyViewed(_keyId: string, _orderId: string, _userId: string): Promise<boolean> { return false; }
+  async logAccessAttempt(_params: KeyAccessAttemptLog): Promise<void> {}
 }
 
 export class MockOrderAccessTokenRepository implements IOrderAccessTokenRepository {
@@ -258,6 +271,12 @@ export class MockCheckoutRepository implements ICheckoutRepository {
   async updateOrder(orderId: string, data: Record<string, unknown>): Promise<void> { this.orders[orderId] = { ...this.orders[orderId], ...data }; }
   async cancelOrder(orderId: string): Promise<void> { delete this.orders[orderId]; }
   async getOrder(orderId: string): Promise<Record<string, unknown> | null> { return this.orders[orderId] ?? null; }
+  async getPaymentMethodsConfig() {
+    return {
+      stripe: { card: true, google_pay: true, apple_pay: true, link: true },
+      paypal: { enabled: true },
+    };
+  }
 }
 
 export class MockPromoCodeValidator implements IPromoCodeValidator {
@@ -388,6 +407,15 @@ export class MockProductRepository implements IProductRepository {
   }
   async getGallery(_productId: string): Promise<GalleryItem[]> { return []; }
   async getFeatured(): Promise<FeaturedProduct[]> { return []; }
+  async isVariantPurchasable(_variantId: string, _quantity: number): Promise<{ purchasable: boolean; reason?: string }> {
+    return { purchasable: true };
+  }
+  async getActivePromoHeader(): Promise<{ code: string; message: string; discount_text: string; expires_at: string } | null> {
+    return null;
+  }
+  async getTrustpilotData(): Promise<{ score: number; reviews_count: number; stars: number } | null> {
+    return null;
+  }
 }
 
 export class MockReferenceDataRepository implements IReferenceDataRepository {
@@ -395,6 +423,9 @@ export class MockReferenceDataRepository implements IReferenceDataRepository {
   async getRegions(): Promise<Region[]> { return [{ id: 'r1', name: 'Global', code: 'global' }]; }
   async getGenres(): Promise<Genre[]> { return [{ id: 'g1', name: 'Action', slug: 'action' }]; }
   async getFAQs(): Promise<FAQ[]> { return []; }
+  async findPlatformBySlug(slug: string): Promise<Platform | null> { return slug === 'pc' ? { id: 'p1', name: 'PC', code: 'pc', slug: 'pc' } : null; }
+  async getPlatformNavItems(): Promise<PlatformNavItem[]> { return [{ id: 'p1', name: 'PC', slug: 'pc', code: 'pc' }]; }
+  async findPlatformFamilyBySlug(_slug: string): Promise<PlatformFamily | null> { return null; }
 }
 
 export class MockStockNotificationRepository implements IStockNotificationRepository {
@@ -415,6 +446,8 @@ export class MockAnalyticsRepository implements IAnalyticsRepository {
   async insertActivityEvents(events: ActivityEvent[]): Promise<void> { this.activityEvents.push(...events); }
   async insertCartEvent(event: CartEvent): Promise<void> { this.cartEvents.push(event); }
   async updateSessionOutcome(dto: SessionOutcomeDto): Promise<void> { this.outcomes.push(dto); }
+  async trackProductViewDuration(_data: ProductViewDurationDto & { user_id?: string }): Promise<void> { return; }
+  async trackSearchEvent(_data: SearchEventDto): Promise<void> { return; }
 }
 
 export class MockGeoService implements IGeoService {
@@ -435,6 +468,9 @@ export class MockWalletRepository implements IWalletRepository {
     return { entries: this.ledgerEntries.slice(0, limit), nextCursor: this.nextCursor };
   }
   async getOrderEarnings(_userId: string, _orderIds: string[]): Promise<OrderEarnings[]> { return this.orderEarnings; }
+  async claimReviewReward(_userId: string, _reviewId: string): Promise<{ credited: boolean; amount_cents: number }> {
+    return { credited: true, amount_cents: 100 };
+  }
 }
 
 // ─── Referrals ───────────────────────────────────────────────────
@@ -475,6 +511,7 @@ export class MockNewsletterRepository implements INewsletterRepository {
 export class MockSecurityHoldRepository implements ISecurityHoldRepository {
   public holds = new Map<string, SecurityHold>();
   public rateLimited = false;
+  public resolveResult: { success: boolean; error?: string } = { success: true };
 
   addHold(hold: SecurityHold) { this.holds.set(hold.id, hold); }
   async findById(holdId: string): Promise<SecurityHold | null> { return this.holds.get(holdId) ?? null; }
@@ -482,6 +519,7 @@ export class MockSecurityHoldRepository implements ISecurityHoldRepository {
   async submitResponse(_holdId: string, _dto: SubmitHoldResponseDto): Promise<void> {}
   async checkRateLimit(_identifier: string, _identifierType: string, _actionType: string): Promise<boolean> { return !this.rateLimited; }
   async recordAttempt(_identifier: string, _identifierType: string, _actionType: string): Promise<void> {}
+  async resolveByToken(_token: string): Promise<{ success: boolean; error?: string }> { return this.resolveResult; }
 }
 
 export class MockVerificationStorage implements IVerificationStorage {
@@ -586,4 +624,64 @@ export class MockGuestSessionRepository implements IGuestSessionRepository {
   addSession(token: string, session: GuestSession) { this.sessions.set(token, session); }
   async validateToken(token: string): Promise<GuestSession | null> { return this.sessions.get(token) ?? null; }
   async exchangeToken(rawToken: string): Promise<GuestSession | null> { return this.sessions.get(rawToken) ?? null; }
+}
+
+// ─── Categories ─────────────────────────────────────────────────
+
+export class MockCategoryRepository implements ICategoryRepository {
+  public categories: Category[] = [{ id: 'cat-1', name: 'Games', slug: 'games' }];
+  async listActive(): Promise<Category[]> { return this.categories; }
+  async findBySlug(slug: string): Promise<Category | null> { return this.categories.find((c) => c.slug === slug) ?? null; }
+  async findSubcategories(_parentId: string): Promise<Category[]> { return []; }
+  async findFaqsByCategoryId(_categoryId: string): Promise<FAQ[]> { return []; }
+}
+
+// ─── Pricing ────────────────────────────────────────────────────
+
+export class MockPricingRepository implements IPricingRepository {
+  async getPrice(_variantId: string, currency: string): Promise<LocalizedPrice | null> {
+    return { price_cents: 2999, currency };
+  }
+  async getBatchPrices(variantIds: string[], currency: string): Promise<Map<string, LocalizedPrice>> {
+    const map = new Map<string, LocalizedPrice>();
+    for (const id of variantIds) map.set(id, { price_cents: 2999, currency });
+    return map;
+  }
+  async hasPricesForCurrency(_currency: string): Promise<boolean> { return true; }
+  async syncRates(): Promise<{ rates?: Record<string, number>; currencies?: string[] } | null> { return null; }
+}
+
+// ─── Geo Restrictions ───────────────────────────────────────────
+
+export class MockGeoRestrictionRepository implements IGeoRestrictionRepository {
+  async isCountryAllowed(_regionId: string, _countryCode: string): Promise<boolean> { return true; }
+  async getExcludedCountries(_regionId: string): Promise<ExcludedCountry[]> { return []; }
+  async getRestrictedVariants(_productId: string, _countryCode: string): Promise<RestrictedVariant[]> { return []; }
+  async getRestrictedRegions(_countryCode: string): Promise<RestrictedRegion[]> { return []; }
+}
+
+// ─── Recommendations ────────────────────────────────────────────
+
+export class MockRecommendationRepository implements IRecommendationRepository {
+  async getSimilar(_productId: string, _limit: number): Promise<RecommendedProduct[]> { return []; }
+  async getAlsoViewed(_productId: string, _daysBack: number, _limit: number): Promise<RecommendedProduct[]> { return []; }
+  async getBoughtTogether(_productId: string, _limit: number): Promise<RecommendedProduct[]> { return []; }
+  async getBatch(_productId: string, _sl: number, _avl: number, _btl: number): Promise<RecommendationsBatch> {
+    return { similar: [], also_viewed: [], bought_together: [] };
+  }
+  async getPersonalized(_userId: string | null, _sessionId: string, _limit: number): Promise<RecommendedProduct[]> { return []; }
+  async getPopular(_daysBack: number, _limit: number): Promise<PopularProduct[]> { return []; }
+  async getLatestReleases(_daysBack: number, _limit: number): Promise<RecommendedProduct[]> { return []; }
+  async getPreOrders(_limit: number): Promise<RecommendedProduct[]> { return []; }
+}
+
+// ─── Search ─────────────────────────────────────────────────────
+
+export class MockSearchProvider implements ISearchProvider {
+  async search(query: string): Promise<SearchResult> {
+    return { hits: [], nbHits: 0, page: 0, nbPages: 0, hitsPerPage: 20, query };
+  }
+  async merchandisedSearch(params: { query: string }): Promise<SearchResult> {
+    return { hits: [], nbHits: 0, page: 0, nbPages: 0, hitsPerPage: 20, query: params.query };
+  }
 }

@@ -1,6 +1,6 @@
 import { injectable } from 'tsyringe';
 import type { IWebhookHandler } from '../../core/ports/webhook-handler.port.js';
-import type { WebhookEvent, WebhookProcessResult } from '../../core/services/payments/payment.types.js';
+import type { WebhookEvent, WebhookProcessResult } from '../../core/use-cases/payments/payment.types.js';
 import { createLogger } from '../../shared/logger.js';
 
 const logger = createLogger('stub-webhook-handler');

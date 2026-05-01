@@ -2,8 +2,11 @@ import { injectable, inject } from 'tsyringe';
 import { TOKENS } from '../../di/tokens.js';
 import type { IDatabase } from '../../core/ports/database.port.js';
 import type { IProductKeyRepository } from '../../core/ports/product-key-repository.port.js';
-import type { ProductKey, KeyViewLog } from '../../core/services/orders/order.types.js';
+import type { ProductKey, KeyViewLog, KeyAccessAttemptLog } from '../../core/use-cases/orders/order.types.js';
 import { InternalError } from '../../core/errors/domain-errors.js';
+import { createLogger } from '../../shared/logger.js';
+
+const logger = createLogger('product-key-repository');
 
 @injectable()
 export class SupabaseProductKeyRepository implements IProductKeyRepository {
@@ -49,5 +52,16 @@ export class SupabaseProductKeyRepository implements IProductKeyRepository {
       eq: [['key_id', keyId], ['order_id', orderId], ['user_id', userId]],
     });
     return row !== null;
+  }
+
+  async logAccessAttempt(params: KeyAccessAttemptLog): Promise<void> {
+    logger.info('Logging key access attempt', { success: params.success, order_id: params.order_id });
+    await this.db.insert('key_access_attempts', {
+      token: params.token ?? null,
+      order_id: params.order_id ?? null,
+      email: params.email ?? null,
+      success: params.success,
+      failure_reason: params.failure_reason ?? null,
+    });
   }
 }

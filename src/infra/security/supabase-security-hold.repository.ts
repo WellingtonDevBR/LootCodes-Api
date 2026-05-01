@@ -6,7 +6,10 @@ import type {
   SecurityHold,
   SecurityHoldStatus,
   SubmitHoldResponseDto,
-} from '../../core/services/security/security.types.js';
+} from '../../core/use-cases/security/security.types.js';
+import { createLogger } from '../../shared/logger.js';
+
+const logger = createLogger('security-hold-repository');
 
 @injectable()
 export class SupabaseSecurityHoldRepository implements ISecurityHoldRepository {
@@ -56,5 +59,29 @@ export class SupabaseSecurityHoldRepository implements ISecurityHoldRepository {
       p_identifier_type: identifierType,
       p_action_type: actionType,
     });
+  }
+
+  async resolveByToken(token: string): Promise<{ success: boolean; error?: string }> {
+    logger.info('Resolving security hold by unlock token');
+
+    const hold = await this.db.queryOne<SecurityHold>('security_holds', {
+      eq: [['unlock_token', token]],
+    });
+
+    if (!hold) {
+      return { success: false, error: 'Invalid or expired unlock token' };
+    }
+
+    if (hold.status === 'resolved') {
+      return { success: false, error: 'Account already unlocked' };
+    }
+
+    await this.db.update('security_holds', { id: hold.id }, {
+      status: 'resolved',
+      resolved_at: new Date().toISOString(),
+      resolution_method: 'unlock_token',
+    });
+
+    return { success: true };
   }
 }

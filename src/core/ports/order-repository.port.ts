@@ -1,4 +1,4 @@
-import type { Order, OrderItem, OrderDetail, PaginationParams } from '../services/orders/order.types.js';
+import type { Order, OrderItem, OrderDetail, PaginationParams } from '../use-cases/orders/order.types.js';
 
 export interface IOrderRepository {
   findById(orderId: string): Promise<Order | null>;

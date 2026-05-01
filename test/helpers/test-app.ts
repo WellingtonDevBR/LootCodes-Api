@@ -1,27 +1,89 @@
 import 'reflect-metadata';
 import { container } from 'tsyringe';
-import { TOKENS } from '../../src/di/tokens.js';
-import { AuthService } from '../../src/core/services/auth/auth.service.js';
-import { ProfileService } from '../../src/core/services/profile/profile.service.js';
-import { OrderService } from '../../src/core/services/orders/order.service.js';
-import { KeyDeliveryService } from '../../src/core/services/orders/key-delivery.service.js';
-import { CheckoutService } from '../../src/core/services/checkout/checkout.service.js';
-import { SupportService } from '../../src/core/services/support/support.service.js';
-import { LibraryService } from '../../src/core/services/library/library.service.js';
-import { NotificationService } from '../../src/core/services/notifications/notification.service.js';
-import { ReviewService } from '../../src/core/services/reviews/review.service.js';
-import { ProductService } from '../../src/core/services/products/product.service.js';
-import { AnalyticsService } from '../../src/core/services/analytics/analytics.service.js';
-import { WalletService } from '../../src/core/services/wallet/wallet.service.js';
-import { ReferralService } from '../../src/core/services/referrals/referral.service.js';
-import { NewsletterService } from '../../src/core/services/newsletter/newsletter.service.js';
-import { SecurityService } from '../../src/core/services/security/security.service.js';
-import { CardChallengeService } from '../../src/core/services/card-challenge/card-challenge.service.js';
-import { PriceMatchService } from '../../src/core/services/price-match/price-match.service.js';
-import { PaymentVerificationService } from '../../src/core/services/payments/payment-verification.service.js';
-import { PaymentCaptureService } from '../../src/core/services/payments/payment-capture.service.js';
-import { WebhookService } from '../../src/core/services/payments/webhook.service.js';
-import { GuestAccessService } from '../../src/core/services/guest/guest-access.service.js';
+import { TOKENS, UC_TOKENS } from '../../src/di/tokens.js';
+import { HandleAuthUseCase } from '../../src/core/use-cases/auth/handle-auth.use-case.js';
+import { InitializeCheckoutUseCase } from '../../src/core/use-cases/checkout/initialize-checkout.use-case.js';
+import { UpdateCheckoutUseCase } from '../../src/core/use-cases/checkout/update-checkout.use-case.js';
+import { CancelCheckoutUseCase } from '../../src/core/use-cases/checkout/cancel-checkout.use-case.js';
+import { CheckoutWithApprovalUseCase } from '../../src/core/use-cases/checkout/checkout-with-approval.use-case.js';
+import { ValidatePromoCodeUseCase } from '../../src/core/use-cases/checkout/validate-promo-code.use-case.js';
+import { GetPaymentMethodsConfigUseCase } from '../../src/core/use-cases/checkout/get-payment-methods-config.use-case.js';
+import { CreateTicketUseCase } from '../../src/core/use-cases/support/create-ticket.use-case.js';
+import { GetTicketUseCase } from '../../src/core/use-cases/support/get-ticket.use-case.js';
+import { GetUserTicketsUseCase } from '../../src/core/use-cases/support/get-user-tickets.use-case.js';
+import { AddMessageUseCase } from '../../src/core/use-cases/support/add-message.use-case.js';
+import { UpdateStatusUseCase } from '../../src/core/use-cases/support/update-status.use-case.js';
+import { SubmitFeedbackUseCase } from '../../src/core/use-cases/support/submit-feedback.use-case.js';
+import { GetVerificationTicketsUseCase } from '../../src/core/use-cases/support/get-verification-tickets.use-case.js';
+import { UploadAttachmentUseCase } from '../../src/core/use-cases/support/upload-attachment.use-case.js';
+import { ListLibraryUseCase } from '../../src/core/use-cases/library/list-library.use-case.js';
+import { SetLibraryStatusUseCase } from '../../src/core/use-cases/library/set-library-status.use-case.js';
+import { RemoveFromLibraryUseCase } from '../../src/core/use-cases/library/remove-from-library.use-case.js';
+import { UpdateLibraryEntryUseCase } from '../../src/core/use-cases/library/update-library-entry.use-case.js';
+
+// Notification use cases
+import { ListNotificationsUseCase } from '../../src/core/use-cases/notifications/list-notifications.use-case.js';
+import { GetUnreadCountUseCase } from '../../src/core/use-cases/notifications/get-unread-count.use-case.js';
+import { MarkReadUseCase } from '../../src/core/use-cases/notifications/mark-read.use-case.js';
+import { MarkAllReadUseCase } from '../../src/core/use-cases/notifications/mark-all-read.use-case.js';
+import { GetPreferencesUseCase } from '../../src/core/use-cases/notifications/get-preferences.use-case.js';
+import { UpdatePreferencesUseCase } from '../../src/core/use-cases/notifications/update-preferences.use-case.js';
+import { RegisterPushTokenUseCase } from '../../src/core/use-cases/notifications/register-push-token.use-case.js';
+import { RemovePushTokenUseCase } from '../../src/core/use-cases/notifications/remove-push-token.use-case.js';
+
+// Review use cases
+import { GetProductReviewsUseCase } from '../../src/core/use-cases/reviews/get-product-reviews.use-case.js';
+import { GetProductRatingUseCase } from '../../src/core/use-cases/reviews/get-product-rating.use-case.js';
+import { SubmitReviewUseCase } from '../../src/core/use-cases/reviews/submit-review.use-case.js';
+import { CheckEligibilityUseCase } from '../../src/core/use-cases/reviews/check-eligibility.use-case.js';
+
+// Products use cases
+import { GetProductBySlugUseCase } from '../../src/core/use-cases/products/catalog/get-product-by-slug.use-case.js';
+import { GetProductByIdUseCase } from '../../src/core/use-cases/products/catalog/get-product-by-id.use-case.js';
+import { GetVariantsUseCase } from '../../src/core/use-cases/products/catalog/get-variants.use-case.js';
+import { GetGalleryUseCase } from '../../src/core/use-cases/products/catalog/get-gallery.use-case.js';
+import { GetFeaturedUseCase } from '../../src/core/use-cases/products/catalog/get-featured.use-case.js';
+import { CheckStockUseCase } from '../../src/core/use-cases/products/stock/check-stock.use-case.js';
+import { BatchCheckStockUseCase } from '../../src/core/use-cases/products/stock/batch-check-stock.use-case.js';
+import { SubscribeStockNotificationUseCase } from '../../src/core/use-cases/products/stock/subscribe-stock-notification.use-case.js';
+import { UnsubscribeStockNotificationUseCase } from '../../src/core/use-cases/products/stock/unsubscribe-stock-notification.use-case.js';
+import { IsSubscribedToStockUseCase } from '../../src/core/use-cases/products/stock/is-subscribed-to-stock.use-case.js';
+import { IsVariantPurchasableUseCase } from '../../src/core/use-cases/products/stock/is-variant-purchasable.use-case.js';
+import { GetPlatformsUseCase } from '../../src/core/use-cases/products/reference/get-platforms.use-case.js';
+import { GetRegionsUseCase } from '../../src/core/use-cases/products/reference/get-regions.use-case.js';
+import { GetGenresUseCase } from '../../src/core/use-cases/products/reference/get-genres.use-case.js';
+import { GetFaqsUseCase } from '../../src/core/use-cases/products/reference/get-faqs.use-case.js';
+import { GetPlatformBySlugUseCase } from '../../src/core/use-cases/products/reference/get-platform-by-slug.use-case.js';
+import { GetPlatformNavItemsUseCase } from '../../src/core/use-cases/products/reference/get-platform-nav-items.use-case.js';
+import { GetPlatformFamilyBySlugUseCase } from '../../src/core/use-cases/products/reference/get-platform-family-by-slug.use-case.js';
+import { GetCategoriesUseCase } from '../../src/core/use-cases/products/categories/get-categories.use-case.js';
+import { GetCategoryBySlugUseCase } from '../../src/core/use-cases/products/categories/get-category-by-slug.use-case.js';
+import { GetSubcategoriesUseCase } from '../../src/core/use-cases/products/categories/get-subcategories.use-case.js';
+import { GetCategoryFaqsUseCase } from '../../src/core/use-cases/products/categories/get-category-faqs.use-case.js';
+import { GetLocalizedPriceUseCase } from '../../src/core/use-cases/products/pricing/get-localized-price.use-case.js';
+import { GetBatchLocalizedPricesUseCase } from '../../src/core/use-cases/products/pricing/get-batch-localized-prices.use-case.js';
+import { HasPricesForCurrencyUseCase } from '../../src/core/use-cases/products/pricing/has-prices-for-currency.use-case.js';
+import { SyncCurrencyRatesUseCase } from '../../src/core/use-cases/products/pricing/sync-currency-rates.use-case.js';
+import { IsCountryAllowedUseCase } from '../../src/core/use-cases/products/geo/is-country-allowed.use-case.js';
+import { GetExcludedCountriesUseCase } from '../../src/core/use-cases/products/geo/get-excluded-countries.use-case.js';
+import { GetRestrictedVariantsUseCase } from '../../src/core/use-cases/products/geo/get-restricted-variants.use-case.js';
+import { GetRestrictedRegionsUseCase } from '../../src/core/use-cases/products/geo/get-restricted-regions.use-case.js';
+import { GetActivePromoHeaderUseCase } from '../../src/core/use-cases/products/storefront/get-active-promo-header.use-case.js';
+import { GetTrustpilotDataUseCase } from '../../src/core/use-cases/products/storefront/get-trustpilot-data.use-case.js';
+
+// Order use cases
+import { GetOrderUseCase } from '../../src/core/use-cases/orders/get-order.use-case.js';
+import { GetOrderDetailUseCase } from '../../src/core/use-cases/orders/get-order-detail.use-case.js';
+import { GetUserOrdersUseCase } from '../../src/core/use-cases/orders/get-user-orders.use-case.js';
+import { GetUserOrdersForSupportUseCase } from '../../src/core/use-cases/orders/get-user-orders-for-support.use-case.js';
+import { ValidateAccessTokenUseCase } from '../../src/core/use-cases/orders/validate-access-token.use-case.js';
+import { ClaimGuestOrderUseCase } from '../../src/core/use-cases/orders/claim-guest-order.use-case.js';
+
+// Key delivery use cases
+import { GetKeysForOrderUseCase } from '../../src/core/use-cases/key-delivery/get-keys-for-order.use-case.js';
+import { GetKeysForOrderItemUseCase } from '../../src/core/use-cases/key-delivery/get-keys-for-order-item.use-case.js';
+import { RevealKeyUseCase } from '../../src/core/use-cases/key-delivery/reveal-key.use-case.js';
+import { CheckKeyViewedUseCase } from '../../src/core/use-cases/key-delivery/check-key-viewed.use-case.js';
 import {
   MockDatabase,
   MockAuthProvider,
@@ -69,6 +131,11 @@ import {
   MockWebhookVerifier,
   MockWebhookHandler,
   MockGuestSessionRepository,
+  MockCategoryRepository,
+  MockPricingRepository,
+  MockGeoRestrictionRepository,
+  MockRecommendationRepository,
+  MockSearchProvider,
 } from './mock-ports.js';
 
 export interface TestMocks {
@@ -118,6 +185,11 @@ export interface TestMocks {
   webhookVerifier: MockWebhookVerifier;
   webhookHandler: MockWebhookHandler;
   guestSessionRepo: MockGuestSessionRepository;
+  categoryRepo: MockCategoryRepository;
+  pricingRepo: MockPricingRepository;
+  geoRestrictionRepo: MockGeoRestrictionRepository;
+  recommendationRepo: MockRecommendationRepository;
+  searchProvider: MockSearchProvider;
 }
 
 function setTestEnv() {
@@ -181,6 +253,11 @@ function registerMocks(): TestMocks {
     webhookVerifier: new MockWebhookVerifier(),
     webhookHandler: new MockWebhookHandler(),
     guestSessionRepo: new MockGuestSessionRepository(),
+    categoryRepo: new MockCategoryRepository(),
+    pricingRepo: new MockPricingRepository(),
+    geoRestrictionRepo: new MockGeoRestrictionRepository(),
+    recommendationRepo: new MockRecommendationRepository(),
+    searchProvider: new MockSearchProvider(),
   };
 
   // Infrastructure
@@ -267,28 +344,103 @@ function registerMocks(): TestMocks {
   // Guest
   container.register(TOKENS.GuestSessionRepository, { useValue: mocks.guestSessionRepo });
 
-  // Services (real implementations, with mock dependencies)
-  container.register(TOKENS.AuthService, { useClass: AuthService });
-  container.register(TOKENS.ProfileService, { useClass: ProfileService });
-  container.register(TOKENS.OrderService, { useClass: OrderService });
-  container.register(TOKENS.KeyDeliveryService, { useClass: KeyDeliveryService });
-  container.register(TOKENS.CheckoutService, { useClass: CheckoutService });
-  container.register(TOKENS.SupportService, { useClass: SupportService });
-  container.register(TOKENS.LibraryService, { useClass: LibraryService });
-  container.register(TOKENS.NotificationService, { useClass: NotificationService });
-  container.register(TOKENS.ReviewService, { useClass: ReviewService });
-  container.register(TOKENS.ProductService, { useClass: ProductService });
-  container.register(TOKENS.AnalyticsService, { useClass: AnalyticsService });
-  container.register(TOKENS.WalletService, { useClass: WalletService });
-  container.register(TOKENS.ReferralService, { useClass: ReferralService });
-  container.register(TOKENS.NewsletterService, { useClass: NewsletterService });
-  container.register(TOKENS.SecurityService, { useClass: SecurityService });
-  container.register(TOKENS.CardChallengeService, { useClass: CardChallengeService });
-  container.register(TOKENS.PriceMatchService, { useClass: PriceMatchService });
-  container.register(TOKENS.PaymentVerificationService, { useClass: PaymentVerificationService });
-  container.register(TOKENS.PaymentCaptureService, { useClass: PaymentCaptureService });
-  container.register(TOKENS.WebhookService, { useClass: WebhookService });
-  container.register(TOKENS.GuestAccessService, { useClass: GuestAccessService });
+  // Categories + Pricing + Geo + Recommendations + Search
+  container.register(TOKENS.CategoryRepository, { useValue: mocks.categoryRepo });
+  container.register(TOKENS.PricingRepository, { useValue: mocks.pricingRepo });
+  container.register(TOKENS.GeoRestrictionRepository, { useValue: mocks.geoRestrictionRepo });
+  container.register(TOKENS.RecommendationRepository, { useValue: mocks.recommendationRepo });
+  container.register(TOKENS.SearchProvider, { useValue: mocks.searchProvider });
+
+  // Order use cases (real implementations, with mock dependencies)
+  container.register(UC_TOKENS.GetOrder, { useClass: GetOrderUseCase });
+  container.register(UC_TOKENS.GetOrderDetail, { useClass: GetOrderDetailUseCase });
+  container.register(UC_TOKENS.GetUserOrders, { useClass: GetUserOrdersUseCase });
+  container.register(UC_TOKENS.GetUserOrdersForSupport, { useClass: GetUserOrdersForSupportUseCase });
+  container.register(UC_TOKENS.ValidateAccessToken, { useClass: ValidateAccessTokenUseCase });
+  container.register(UC_TOKENS.ClaimGuestOrder, { useClass: ClaimGuestOrderUseCase });
+
+  // Key delivery use cases
+  container.register(UC_TOKENS.GetKeysForOrder, { useClass: GetKeysForOrderUseCase });
+  container.register(UC_TOKENS.GetKeysForOrderItem, { useClass: GetKeysForOrderItemUseCase });
+  container.register(UC_TOKENS.RevealKey, { useClass: RevealKeyUseCase });
+  container.register(UC_TOKENS.CheckKeyViewed, { useClass: CheckKeyViewedUseCase });
+
+  // Support use cases
+  container.register(UC_TOKENS.CreateTicket, { useClass: CreateTicketUseCase });
+  container.register(UC_TOKENS.GetTicket, { useClass: GetTicketUseCase });
+  container.register(UC_TOKENS.GetUserTickets, { useClass: GetUserTicketsUseCase });
+  container.register(UC_TOKENS.AddMessage, { useClass: AddMessageUseCase });
+  container.register(UC_TOKENS.UpdateTicketStatus, { useClass: UpdateStatusUseCase });
+  container.register(UC_TOKENS.SubmitFeedback, { useClass: SubmitFeedbackUseCase });
+  container.register(UC_TOKENS.GetVerificationTickets, { useClass: GetVerificationTicketsUseCase });
+  container.register(UC_TOKENS.UploadAttachment, { useClass: UploadAttachmentUseCase });
+
+  // Library use cases
+  container.register(UC_TOKENS.ListLibrary, { useClass: ListLibraryUseCase });
+  container.register(UC_TOKENS.SetLibraryStatus, { useClass: SetLibraryStatusUseCase });
+  container.register(UC_TOKENS.RemoveFromLibrary, { useClass: RemoveFromLibraryUseCase });
+  container.register(UC_TOKENS.UpdateLibraryEntry, { useClass: UpdateLibraryEntryUseCase });
+
+  // Auth use cases
+  container.register(UC_TOKENS.HandleAuth, { useClass: HandleAuthUseCase });
+
+  // Checkout use cases
+  container.register(UC_TOKENS.InitializeCheckout, { useClass: InitializeCheckoutUseCase });
+  container.register(UC_TOKENS.UpdateCheckout, { useClass: UpdateCheckoutUseCase });
+  container.register(UC_TOKENS.CancelCheckout, { useClass: CancelCheckoutUseCase });
+  container.register(UC_TOKENS.CheckoutWithApproval, { useClass: CheckoutWithApprovalUseCase });
+  container.register(UC_TOKENS.ValidatePromoCode, { useClass: ValidatePromoCodeUseCase });
+  container.register(UC_TOKENS.GetPaymentMethodsConfig, { useClass: GetPaymentMethodsConfigUseCase });
+
+  // Notification use cases
+  container.register(UC_TOKENS.ListNotifications, { useClass: ListNotificationsUseCase });
+  container.register(UC_TOKENS.GetUnreadCount, { useClass: GetUnreadCountUseCase });
+  container.register(UC_TOKENS.MarkRead, { useClass: MarkReadUseCase });
+  container.register(UC_TOKENS.MarkAllRead, { useClass: MarkAllReadUseCase });
+  container.register(UC_TOKENS.GetPreferences, { useClass: GetPreferencesUseCase });
+  container.register(UC_TOKENS.UpdatePreferences, { useClass: UpdatePreferencesUseCase });
+  container.register(UC_TOKENS.RegisterPushToken, { useClass: RegisterPushTokenUseCase });
+  container.register(UC_TOKENS.RemovePushToken, { useClass: RemovePushTokenUseCase });
+
+  // Review use cases
+  container.register(UC_TOKENS.GetProductReviews, { useClass: GetProductReviewsUseCase });
+  container.register(UC_TOKENS.GetProductRating, { useClass: GetProductRatingUseCase });
+  container.register(UC_TOKENS.SubmitReview, { useClass: SubmitReviewUseCase });
+  container.register(UC_TOKENS.CheckEligibility, { useClass: CheckEligibilityUseCase });
+
+  // Products use cases
+  container.register(UC_TOKENS.GetProductBySlug, { useClass: GetProductBySlugUseCase });
+  container.register(UC_TOKENS.GetProductById, { useClass: GetProductByIdUseCase });
+  container.register(UC_TOKENS.GetVariants, { useClass: GetVariantsUseCase });
+  container.register(UC_TOKENS.GetGallery, { useClass: GetGalleryUseCase });
+  container.register(UC_TOKENS.GetFeatured, { useClass: GetFeaturedUseCase });
+  container.register(UC_TOKENS.CheckStock, { useClass: CheckStockUseCase });
+  container.register(UC_TOKENS.BatchCheckStock, { useClass: BatchCheckStockUseCase });
+  container.register(UC_TOKENS.SubscribeStockNotification, { useClass: SubscribeStockNotificationUseCase });
+  container.register(UC_TOKENS.UnsubscribeStockNotification, { useClass: UnsubscribeStockNotificationUseCase });
+  container.register(UC_TOKENS.IsSubscribedToStock, { useClass: IsSubscribedToStockUseCase });
+  container.register(UC_TOKENS.IsVariantPurchasable, { useClass: IsVariantPurchasableUseCase });
+  container.register(UC_TOKENS.GetPlatforms, { useClass: GetPlatformsUseCase });
+  container.register(UC_TOKENS.GetRegions, { useClass: GetRegionsUseCase });
+  container.register(UC_TOKENS.GetGenres, { useClass: GetGenresUseCase });
+  container.register(UC_TOKENS.GetFaqs, { useClass: GetFaqsUseCase });
+  container.register(UC_TOKENS.GetPlatformBySlug, { useClass: GetPlatformBySlugUseCase });
+  container.register(UC_TOKENS.GetPlatformNavItems, { useClass: GetPlatformNavItemsUseCase });
+  container.register(UC_TOKENS.GetPlatformFamilyBySlug, { useClass: GetPlatformFamilyBySlugUseCase });
+  container.register(UC_TOKENS.GetCategories, { useClass: GetCategoriesUseCase });
+  container.register(UC_TOKENS.GetCategoryBySlug, { useClass: GetCategoryBySlugUseCase });
+  container.register(UC_TOKENS.GetSubcategories, { useClass: GetSubcategoriesUseCase });
+  container.register(UC_TOKENS.GetCategoryFaqs, { useClass: GetCategoryFaqsUseCase });
+  container.register(UC_TOKENS.GetLocalizedPrice, { useClass: GetLocalizedPriceUseCase });
+  container.register(UC_TOKENS.GetBatchLocalizedPrices, { useClass: GetBatchLocalizedPricesUseCase });
+  container.register(UC_TOKENS.HasPricesForCurrency, { useClass: HasPricesForCurrencyUseCase });
+  container.register(UC_TOKENS.SyncCurrencyRates, { useClass: SyncCurrencyRatesUseCase });
+  container.register(UC_TOKENS.IsCountryAllowed, { useClass: IsCountryAllowedUseCase });
+  container.register(UC_TOKENS.GetExcludedCountries, { useClass: GetExcludedCountriesUseCase });
+  container.register(UC_TOKENS.GetRestrictedVariants, { useClass: GetRestrictedVariantsUseCase });
+  container.register(UC_TOKENS.GetRestrictedRegions, { useClass: GetRestrictedRegionsUseCase });
+  container.register(UC_TOKENS.GetActivePromoHeader, { useClass: GetActivePromoHeaderUseCase });
+  container.register(UC_TOKENS.GetTrustpilotData, { useClass: GetTrustpilotDataUseCase });
 
   return mocks;
 }

@@ -1,4 +1,4 @@
-import type { ReferralMe, ReferralListPage, ReferralLeaderboardEntry, ListReferralsParams, GetLeaderboardParams, OpenDisputeParams, OpenDisputeResult } from '../services/referrals/referral.types.js';
+import type { ReferralMe, ReferralListPage, ReferralLeaderboardEntry, ListReferralsParams, GetLeaderboardParams, OpenDisputeParams, OpenDisputeResult } from '../use-cases/referrals/referral.types.js';
 
 export interface IReferralRepository {
   getMe(userId: string): Promise<ReferralMe | null>;

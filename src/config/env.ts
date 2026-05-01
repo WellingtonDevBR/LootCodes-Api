@@ -17,10 +17,18 @@ const envSchema = z.object({
 
   RESEND_API_KEY: z.string().min(1),
 
+  ALGOLIA_APP_ID: z.string().optional(),
+  ALGOLIA_SEARCH_KEY: z.string().optional(),
+  ALGOLIA_INDEX_NAME: z.string().default('products'),
+
   CORS_ORIGINS: z.string().default('https://lootcodes.com,https://www.lootcodes.com'),
 
   SITE_URL: z.string().url().default('https://lootcodes.com'),
   SITE_NAME: z.string().default('LootCodes'),
+
+  SENTRY_DSN: z.string().url().optional(),
+  SENTRY_ENVIRONMENT: z.string().optional(),
+  SENTRY_RELEASE: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

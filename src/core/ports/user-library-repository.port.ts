@@ -1,4 +1,4 @@
-import type { LibraryEntry, SetLibraryStatusDto, UpdateLibraryEntryDto } from '../services/library/library.types.js';
+import type { LibraryEntry, SetLibraryStatusDto, UpdateLibraryEntryDto } from '../use-cases/library/library.types.js';
 
 export interface IUserLibraryRepository {
   list(userId: string): Promise<LibraryEntry[]>;

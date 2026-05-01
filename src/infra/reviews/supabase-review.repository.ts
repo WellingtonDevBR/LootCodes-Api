@@ -2,7 +2,7 @@ import { injectable, inject } from 'tsyringe';
 import { TOKENS } from '../../di/tokens.js';
 import type { IDatabase } from '../../core/ports/database.port.js';
 import type { IReviewRepository } from '../../core/ports/review-repository.port.js';
-import type { Review, ProductRating, CreateReviewDto, ReviewEligibility, ReviewPaginationParams } from '../../core/services/reviews/review.types.js';
+import type { Review, ProductRating, CreateReviewDto, ReviewEligibility, ReviewPaginationParams } from '../../core/use-cases/reviews/review.types.js';
 import { createLogger } from '../../shared/logger.js';
 
 const logger = createLogger('supabase-review-repository');

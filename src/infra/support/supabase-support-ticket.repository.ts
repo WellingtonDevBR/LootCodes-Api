@@ -8,7 +8,7 @@ import type {
   CreateTicketDto,
   TicketDetail,
   TicketFeedbackDto,
-} from '../../core/services/support/support.types.js';
+} from '../../core/use-cases/support/support.types.js';
 
 @injectable()
 export class SupabaseSupportTicketRepository implements ISupportTicketRepository {

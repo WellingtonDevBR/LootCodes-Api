@@ -1,8 +1,15 @@
 import type { FastifyInstance } from 'fastify';
 import { container } from 'tsyringe';
-import { TOKENS } from '../../di/tokens.js';
-import type { INotificationService } from '../../core/ports/notification-service.port.js';
-import type { UpdatePreferencesDto } from '../../core/services/notifications/notification.types.js';
+import { UC_TOKENS } from '../../di/tokens.js';
+import type { ListNotificationsUseCase } from '../../core/use-cases/notifications/list-notifications.use-case.js';
+import type { GetUnreadCountUseCase } from '../../core/use-cases/notifications/get-unread-count.use-case.js';
+import type { MarkReadUseCase } from '../../core/use-cases/notifications/mark-read.use-case.js';
+import type { MarkAllReadUseCase } from '../../core/use-cases/notifications/mark-all-read.use-case.js';
+import type { GetPreferencesUseCase } from '../../core/use-cases/notifications/get-preferences.use-case.js';
+import type { UpdatePreferencesUseCase } from '../../core/use-cases/notifications/update-preferences.use-case.js';
+import type { RegisterPushTokenUseCase } from '../../core/use-cases/notifications/register-push-token.use-case.js';
+import type { RemovePushTokenUseCase } from '../../core/use-cases/notifications/remove-push-token.use-case.js';
+import type { UpdatePreferencesDto } from '../../core/use-cases/notifications/notification.types.js';
 import { authGuard } from '../middleware/auth.guard.js';
 import {
   listNotificationsQuerySchema,
@@ -17,25 +24,21 @@ interface AuthenticatedRequest {
 }
 
 export async function notificationsRoutes(app: FastifyInstance) {
-  const resolveService = () => container.resolve<INotificationService>(TOKENS.NotificationService);
-
   app.get<{ Querystring: { limit?: number; offset?: number } }>(
     '/',
     { preHandler: [authGuard], schema: { querystring: listNotificationsQuerySchema } },
     async (request, reply) => {
       const { authUser } = request as unknown as AuthenticatedRequest;
-      const notifications = await resolveService().listNotifications(
-        authUser.id,
-        request.query.limit,
-        request.query.offset,
-      );
+      const uc = container.resolve<ListNotificationsUseCase>(UC_TOKENS.ListNotifications);
+      const notifications = await uc.execute(authUser.id, request.query.limit, request.query.offset);
       return reply.send(notifications);
     },
   );
 
   app.get('/unread-count', { preHandler: [authGuard] }, async (request, reply) => {
     const { authUser } = request as unknown as AuthenticatedRequest;
-    const count = await resolveService().getUnreadCount(authUser.id);
+    const uc = container.resolve<GetUnreadCountUseCase>(UC_TOKENS.GetUnreadCount);
+    const count = await uc.execute(authUser.id);
     return reply.send({ count });
   });
 
@@ -44,20 +47,23 @@ export async function notificationsRoutes(app: FastifyInstance) {
     { preHandler: [authGuard], schema: { params: markReadParamsSchema } },
     async (request, reply) => {
       const { authUser } = request as unknown as AuthenticatedRequest;
-      await resolveService().markRead(authUser.id, request.params.id);
+      const uc = container.resolve<MarkReadUseCase>(UC_TOKENS.MarkRead);
+      await uc.execute(authUser.id, request.params.id);
       return reply.send({ success: true });
     },
   );
 
   app.put('/read-all', { preHandler: [authGuard] }, async (request, reply) => {
     const { authUser } = request as unknown as AuthenticatedRequest;
-    await resolveService().markAllRead(authUser.id);
+    const uc = container.resolve<MarkAllReadUseCase>(UC_TOKENS.MarkAllRead);
+    await uc.execute(authUser.id);
     return reply.send({ success: true });
   });
 
   app.get('/preferences', { preHandler: [authGuard] }, async (request, reply) => {
     const { authUser } = request as unknown as AuthenticatedRequest;
-    const prefs = await resolveService().getPreferences(authUser.id);
+    const uc = container.resolve<GetPreferencesUseCase>(UC_TOKENS.GetPreferences);
+    const prefs = await uc.execute(authUser.id);
     return reply.send(prefs);
   });
 
@@ -66,7 +72,8 @@ export async function notificationsRoutes(app: FastifyInstance) {
     { preHandler: [authGuard], schema: { body: updatePreferencesSchema } },
     async (request, reply) => {
       const { authUser } = request as unknown as AuthenticatedRequest;
-      const prefs = await resolveService().updatePreferences(authUser.id, request.body);
+      const uc = container.resolve<UpdatePreferencesUseCase>(UC_TOKENS.UpdatePreferences);
+      const prefs = await uc.execute(authUser.id, request.body);
       return reply.send(prefs);
     },
   );
@@ -76,7 +83,8 @@ export async function notificationsRoutes(app: FastifyInstance) {
     { preHandler: [authGuard], schema: { body: registerPushTokenSchema } },
     async (request, reply) => {
       const { authUser } = request as unknown as AuthenticatedRequest;
-      await resolveService().registerPushToken(authUser.id, request.body.token, request.body.platform);
+      const uc = container.resolve<RegisterPushTokenUseCase>(UC_TOKENS.RegisterPushToken);
+      await uc.execute(authUser.id, request.body.token, request.body.platform);
       return reply.send({ success: true });
     },
   );
@@ -86,7 +94,8 @@ export async function notificationsRoutes(app: FastifyInstance) {
     { preHandler: [authGuard], schema: { body: removePushTokenSchema } },
     async (request, reply) => {
       const { authUser } = request as unknown as AuthenticatedRequest;
-      await resolveService().removePushToken(authUser.id, request.body.token);
+      const uc = container.resolve<RemovePushTokenUseCase>(UC_TOKENS.RemovePushToken);
+      await uc.execute(authUser.id, request.body.token);
       return reply.send({ success: true });
     },
   );

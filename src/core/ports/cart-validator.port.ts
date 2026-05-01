@@ -1,4 +1,4 @@
-import type { CartItem, StockCheckResult } from '../services/checkout/checkout.types.js';
+import type { CartItem, StockCheckResult } from '../use-cases/checkout/checkout.types.js';
 
 export interface ICartValidator {
   validateItems(items: CartItem[]): Promise<void>;

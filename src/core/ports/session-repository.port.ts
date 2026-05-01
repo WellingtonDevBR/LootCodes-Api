@@ -1,4 +1,4 @@
-import type { UserSession, UpsertSessionDto } from '../services/profile/profile.types.js';
+import type { UserSession, UpsertSessionDto } from '../use-cases/profile/profile.types.js';
 
 export interface ISessionRepository {
   upsert(params: UpsertSessionDto): Promise<UserSession>;

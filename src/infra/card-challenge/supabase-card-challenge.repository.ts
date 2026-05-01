@@ -8,7 +8,7 @@ import type {
   VerifyChallengeDto,
   VerifyChallengeResult,
   ChooseIdResult,
-} from '../../core/services/card-challenge/card-challenge.types.js';
+} from '../../core/use-cases/card-challenge/card-challenge.types.js';
 
 @injectable()
 export class SupabaseCardChallengeRepository implements ICardChallengeRepository {

@@ -2,7 +2,7 @@ import { injectable, inject } from 'tsyringe';
 import { TOKENS } from '../../di/tokens.js';
 import type { IDatabase } from '../../core/ports/database.port.js';
 import type { ICartValidator } from '../../core/ports/cart-validator.port.js';
-import type { CartItem, StockCheckResult } from '../../core/services/checkout/checkout.types.js';
+import type { CartItem, StockCheckResult } from '../../core/use-cases/checkout/checkout.types.js';
 import { ValidationError } from '../../core/errors/domain-errors.js';
 
 @injectable()

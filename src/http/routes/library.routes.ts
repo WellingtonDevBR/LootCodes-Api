@@ -1,8 +1,11 @@
 import type { FastifyInstance } from 'fastify';
 import { container } from 'tsyringe';
-import { TOKENS } from '../../di/tokens.js';
-import type { ILibraryService } from '../../core/ports/library-service.port.js';
-import type { SetLibraryStatusDto, UpdateLibraryEntryDto } from '../../core/services/library/library.types.js';
+import { UC_TOKENS } from '../../di/tokens.js';
+import type { ListLibraryUseCase } from '../../core/use-cases/library/list-library.use-case.js';
+import type { SetLibraryStatusUseCase } from '../../core/use-cases/library/set-library-status.use-case.js';
+import type { UpdateLibraryEntryUseCase } from '../../core/use-cases/library/update-library-entry.use-case.js';
+import type { RemoveFromLibraryUseCase } from '../../core/use-cases/library/remove-from-library.use-case.js';
+import type { SetLibraryStatusDto, UpdateLibraryEntryDto } from '../../core/use-cases/library/library.types.js';
 import { authGuard } from '../middleware/auth.guard.js';
 import {
   setLibraryStatusSchema,
@@ -15,11 +18,10 @@ interface AuthenticatedRequest {
 }
 
 export async function libraryRoutes(app: FastifyInstance) {
-  const resolveService = () => container.resolve<ILibraryService>(TOKENS.LibraryService);
-
   app.get('/', { preHandler: [authGuard] }, async (request, reply) => {
+    const uc = container.resolve<ListLibraryUseCase>(UC_TOKENS.ListLibrary);
     const { authUser } = request as unknown as AuthenticatedRequest;
-    const entries = await resolveService().listLibrary(authUser.id);
+    const entries = await uc.execute(authUser.id);
     return reply.send(entries);
   });
 
@@ -27,8 +29,9 @@ export async function libraryRoutes(app: FastifyInstance) {
     '/status',
     { preHandler: [authGuard], schema: { body: setLibraryStatusSchema } },
     async (request, reply) => {
+      const uc = container.resolve<SetLibraryStatusUseCase>(UC_TOKENS.SetLibraryStatus);
       const { authUser } = request as unknown as AuthenticatedRequest;
-      const entry = await resolveService().setStatus(authUser.id, request.body);
+      const entry = await uc.execute(authUser.id, request.body);
       return reply.send(entry);
     },
   );
@@ -40,8 +43,9 @@ export async function libraryRoutes(app: FastifyInstance) {
       schema: { params: libraryProductParamsSchema, body: updateLibraryEntrySchema },
     },
     async (request, reply) => {
+      const uc = container.resolve<UpdateLibraryEntryUseCase>(UC_TOKENS.UpdateLibraryEntry);
       const { authUser } = request as unknown as AuthenticatedRequest;
-      await resolveService().updateEntry(authUser.id, request.params.productId, request.body);
+      await uc.execute(authUser.id, request.params.productId, request.body);
       return reply.send({ success: true });
     },
   );
@@ -50,8 +54,9 @@ export async function libraryRoutes(app: FastifyInstance) {
     '/:productId',
     { preHandler: [authGuard], schema: { params: libraryProductParamsSchema } },
     async (request, reply) => {
+      const uc = container.resolve<RemoveFromLibraryUseCase>(UC_TOKENS.RemoveFromLibrary);
       const { authUser } = request as unknown as AuthenticatedRequest;
-      await resolveService().removeFromLibrary(authUser.id, request.params.productId);
+      await uc.execute(authUser.id, request.params.productId);
       return reply.code(204).send();
     },
   );

@@ -2,7 +2,7 @@ import { injectable, inject } from 'tsyringe';
 import { TOKENS } from '../../di/tokens.js';
 import type { IDatabase } from '../../core/ports/database.port.js';
 import type { IUserLibraryRepository } from '../../core/ports/user-library-repository.port.js';
-import type { LibraryEntry, SetLibraryStatusDto, UpdateLibraryEntryDto } from '../../core/services/library/library.types.js';
+import type { LibraryEntry, SetLibraryStatusDto, UpdateLibraryEntryDto } from '../../core/use-cases/library/library.types.js';
 
 @injectable()
 export class SupabaseUserLibraryRepository implements IUserLibraryRepository {

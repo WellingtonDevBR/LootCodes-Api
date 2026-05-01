@@ -70,3 +70,26 @@ export const claimGuestOrderBodySchema = {
   },
   additionalProperties: false,
 } as const;
+
+export const logKeyViewBodySchema = {
+  type: 'object',
+  required: ['order_id'],
+  properties: {
+    order_id: { type: 'string', format: 'uuid' },
+    access_token: { type: 'string', minLength: 1 },
+  },
+  additionalProperties: false,
+} as const;
+
+export const logAccessAttemptBodySchema = {
+  type: 'object',
+  required: ['success'],
+  properties: {
+    token: { type: 'string', minLength: 1 },
+    order_id: { type: 'string', format: 'uuid' },
+    email: { type: 'string', format: 'email', maxLength: 254 },
+    success: { type: 'boolean' },
+    failure_reason: { type: 'string', maxLength: 500 },
+  },
+  additionalProperties: false,
+} as const;

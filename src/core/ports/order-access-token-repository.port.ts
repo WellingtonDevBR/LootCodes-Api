@@ -1,4 +1,4 @@
-import type { OrderAccessToken } from '../services/orders/order.types.js';
+import type { OrderAccessToken } from '../use-cases/orders/order.types.js';
 
 export interface IOrderAccessTokenRepository {
   validate(token: string, orderId: string): Promise<OrderAccessToken | null>;

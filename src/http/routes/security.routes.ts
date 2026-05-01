@@ -1,47 +1,46 @@
 import type { FastifyInstance } from 'fastify';
 import { container } from 'tsyringe';
-import { TOKENS } from '../../di/tokens.js';
-import type { ISecurityService } from '../../core/ports/security-service.port.js';
-import type { SubmitHoldResponseDto } from '../../core/services/security/security.types.js';
+import { UC_TOKENS } from '../../di/tokens.js';
+import type { GetHoldUseCase } from '../../core/use-cases/security/get-hold.use-case.js';
+import type { GetHoldStatusUseCase } from '../../core/use-cases/security/get-hold-status.use-case.js';
+import type { UploadDocumentUseCase } from '../../core/use-cases/security/upload-document.use-case.js';
+import type { SubmitResponseUseCase } from '../../core/use-cases/security/submit-response.use-case.js';
+import type { UnlockAccountUseCase } from '../../core/use-cases/security/unlock-account.use-case.js';
+import type { SubmitHoldResponseDto } from '../../core/use-cases/security/security.types.js';
 import {
   holdIdParamsSchema,
   uploadDocumentBodySchema,
   submitResponseBodySchema,
+  unlockAccountBodySchema,
 } from '../schemas/security.schema.js';
 
 export async function securityRoutes(app: FastifyInstance) {
   app.get<{ Params: { id: string } }>(
     '/holds/:id',
-    {
-      schema: { params: holdIdParamsSchema },
-    },
+    { schema: { params: holdIdParamsSchema } },
     async (request, reply) => {
-      const securityService = container.resolve<ISecurityService>(TOKENS.SecurityService);
-      const hold = await securityService.getHold(request.params.id);
+      const uc = container.resolve<GetHoldUseCase>(UC_TOKENS.GetHold);
+      const hold = await uc.execute(request.params.id);
       return reply.send(hold);
     },
   );
 
   app.get<{ Params: { id: string } }>(
     '/holds/:id/status',
-    {
-      schema: { params: holdIdParamsSchema },
-    },
+    { schema: { params: holdIdParamsSchema } },
     async (request, reply) => {
-      const securityService = container.resolve<ISecurityService>(TOKENS.SecurityService);
-      const status = await securityService.getHoldStatus(request.params.id);
+      const uc = container.resolve<GetHoldStatusUseCase>(UC_TOKENS.GetHoldStatus);
+      const status = await uc.execute(request.params.id);
       return reply.send({ status });
     },
   );
 
   app.post<{ Params: { id: string }; Body: { path: string; content_type: string } }>(
     '/holds/:id/upload',
-    {
-      schema: { params: holdIdParamsSchema, body: uploadDocumentBodySchema },
-    },
+    { schema: { params: holdIdParamsSchema, body: uploadDocumentBodySchema } },
     async (request, reply) => {
-      const securityService = container.resolve<ISecurityService>(TOKENS.SecurityService);
-      const url = await securityService.uploadDocument(
+      const uc = container.resolve<UploadDocumentUseCase>(UC_TOKENS.UploadDocument);
+      const url = await uc.execute(
         request.params.id,
         request.body.path,
         Buffer.alloc(0),
@@ -56,17 +55,25 @@ export async function securityRoutes(app: FastifyInstance) {
     Body: { responses: Record<string, unknown>; evidence_urls: string[]; email: string };
   }>(
     '/holds/:id/respond',
-    {
-      schema: { params: holdIdParamsSchema, body: submitResponseBodySchema },
-    },
+    { schema: { params: holdIdParamsSchema, body: submitResponseBodySchema } },
     async (request, reply) => {
-      const securityService = container.resolve<ISecurityService>(TOKENS.SecurityService);
+      const uc = container.resolve<SubmitResponseUseCase>(UC_TOKENS.SubmitHoldResponse);
       const dto: SubmitHoldResponseDto = {
         responses: request.body.responses,
         evidence_urls: request.body.evidence_urls,
       };
-      await securityService.submitResponse(request.params.id, dto, request.body.email);
+      await uc.execute(request.params.id, dto, request.body.email);
       return reply.send({ success: true });
+    },
+  );
+
+  app.post<{ Body: { token: string } }>(
+    '/unlock-account',
+    { schema: { body: unlockAccountBodySchema } },
+    async (request, reply) => {
+      const uc = container.resolve<UnlockAccountUseCase>(UC_TOKENS.UnlockAccount);
+      const result = await uc.execute(request.body.token);
+      return reply.send(result);
     },
   );
 }

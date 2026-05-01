@@ -2,7 +2,7 @@ import { injectable, inject } from 'tsyringe';
 import { TOKENS } from '../../di/tokens.js';
 import type { IPaymentProvider } from '../../core/ports/payment-provider.port.js';
 import type { IPaymentVerifier } from '../../core/ports/payment-verifier.port.js';
-import type { VerifyPaymentDto, PaymentVerificationResult } from '../../core/services/payments/payment.types.js';
+import type { VerifyPaymentDto, PaymentVerificationResult } from '../../core/use-cases/payments/payment.types.js';
 import { createLogger } from '../../shared/logger.js';
 
 const logger = createLogger('stub-payment-verifier');

@@ -2,7 +2,7 @@ import { injectable, inject } from 'tsyringe';
 import { TOKENS } from '../../di/tokens.js';
 import type { IDatabase } from '../../core/ports/database.port.js';
 import type { IPriceMatchRepository } from '../../core/ports/price-match-repository.port.js';
-import type { PriceMatchClaim, PriceMatchClaimSubmission, PriceMatchClaimResult, PriceMatchConfig } from '../../core/services/price-match/price-match.types.js';
+import type { PriceMatchClaim, PriceMatchClaimSubmission, PriceMatchClaimResult, PriceMatchConfig } from '../../core/use-cases/price-match/price-match.types.js';
 import { createLogger } from '../../shared/logger.js';
 
 const logger = createLogger('supabase-price-match-repository');

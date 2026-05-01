@@ -1,4 +1,4 @@
-import type { CartItem } from '../services/checkout/checkout.types.js';
+import type { CartItem, PaymentMethodsConfig } from '../use-cases/checkout/checkout.types.js';
 
 export interface CreateOrderParams {
   user_id?: string;
@@ -15,4 +15,5 @@ export interface ICheckoutRepository {
   updateOrder(orderId: string, data: Record<string, unknown>): Promise<void>;
   cancelOrder(orderId: string): Promise<void>;
   getOrder(orderId: string): Promise<Record<string, unknown> | null>;
+  getPaymentMethodsConfig(): Promise<PaymentMethodsConfig>;
 }

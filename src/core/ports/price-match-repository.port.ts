@@ -1,4 +1,4 @@
-import type { PriceMatchClaim, PriceMatchClaimSubmission, PriceMatchClaimResult, PriceMatchConfig } from '../services/price-match/price-match.types.js';
+import type { PriceMatchClaim, PriceMatchClaimSubmission, PriceMatchClaimResult, PriceMatchConfig } from '../use-cases/price-match/price-match.types.js';
 
 export interface IPriceMatchRepository {
   submitClaim(data: PriceMatchClaimSubmission): Promise<PriceMatchClaimResult>;

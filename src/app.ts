@@ -1,9 +1,14 @@
+import * as Sentry from '@sentry/node';
 import Fastify, { type FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
+import helmet from '@fastify/helmet';
+import rateLimit from '@fastify/rate-limit';
+import multipart from '@fastify/multipart';
 import sensible from '@fastify/sensible';
 import { loadEnv } from './config/env.js';
 import { buildCorsOrigins, corsOriginValidator } from './config/cors.js';
 import { errorHandler } from './http/middleware/error-handler.js';
+import { registerIpBlocklistHook } from './http/middleware/ip-blocklist.hook.js';
 import { healthRoutes } from './http/routes/health.routes.js';
 import { authRoutes } from './http/routes/auth.routes.js';
 import { profileRoutes } from './http/routes/profile.routes.js';
@@ -24,6 +29,9 @@ import { priceMatchRoutes } from './http/routes/price-match.routes.js';
 import { paymentRoutes } from './http/routes/payments.routes.js';
 import { webhookRoutes } from './http/routes/webhooks.routes.js';
 import { guestRoutes } from './http/routes/guest.routes.js';
+import { recommendationsRoutes } from './http/routes/recommendations.routes.js';
+import { searchRoutes } from './http/routes/search.routes.js';
+import { storefrontRoutes } from './http/routes/storefront.routes.js';
 
 export async function buildApp(): Promise<FastifyInstance> {
   const env = loadEnv();
@@ -32,6 +40,9 @@ export async function buildApp(): Promise<FastifyInstance> {
     logger: {
       level: env.NODE_ENV === 'production' ? 'info' : 'debug',
     },
+    trustProxy: true,
+    requestTimeout: 30_000,
+    bodyLimit: 1_048_576,
   });
 
   const origins = buildCorsOrigins(env);
@@ -42,9 +53,27 @@ export async function buildApp(): Promise<FastifyInstance> {
     allowedHeaders: ['authorization', 'content-type', 'x-requested-with', 'x-requested-by', 'x-internal-secret', 'x-guest-token', 'stripe-signature'],
   });
 
+  await app.register(helmet, {
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+  });
+
+  await app.register(rateLimit, {
+    max: 100,
+    timeWindow: '1 minute',
+    allowList: ['127.0.0.1'],
+  });
+
+  await app.register(multipart, {
+    limits: {
+      fileSize: 10 * 1024 * 1024,
+      files: 1,
+    },
+  });
+
   await app.register(sensible);
 
-  app.setErrorHandler(errorHandler);
+  registerIpBlocklistHook(app);
 
   await app.register(healthRoutes, { prefix: '/health' });
   await app.register(authRoutes, { prefix: '/api/auth' });
@@ -66,6 +95,13 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(paymentRoutes, { prefix: '/api/payments' });
   await app.register(webhookRoutes, { prefix: '/api/webhooks' });
   await app.register(guestRoutes, { prefix: '/api/guest' });
+  await app.register(recommendationsRoutes, { prefix: '/api/recommendations' });
+  await app.register(searchRoutes, { prefix: '/api/search' });
+  await app.register(storefrontRoutes, { prefix: '/api/storefront' });
+
+  Sentry.setupFastifyErrorHandler(app);
+
+  app.setErrorHandler(errorHandler);
 
   return app;
 }

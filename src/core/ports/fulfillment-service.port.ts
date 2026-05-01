@@ -1,4 +1,4 @@
-import type { FulfillmentResult } from '../services/payments/payment.types.js';
+import type { FulfillmentResult } from '../use-cases/payments/payment.types.js';
 
 export interface IFulfillmentService {
   fulfill(orderId: string, riskScore?: number): Promise<FulfillmentResult>;

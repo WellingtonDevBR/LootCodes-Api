@@ -1,12 +1,19 @@
 import type { FastifyInstance } from 'fastify';
 import { container } from 'tsyringe';
-import { TOKENS } from '../../di/tokens.js';
-import type { ICheckoutService } from '../../core/ports/checkout-service.port.js';
-import type { CheckoutInitDto, CheckoutUpdateDto } from '../../core/services/checkout/checkout.types.js';
+import { UC_TOKENS } from '../../di/tokens.js';
+import type { InitializeCheckoutUseCase } from '../../core/use-cases/checkout/initialize-checkout.use-case.js';
+import type { UpdateCheckoutUseCase } from '../../core/use-cases/checkout/update-checkout.use-case.js';
+import type { CancelCheckoutUseCase } from '../../core/use-cases/checkout/cancel-checkout.use-case.js';
+import type { CheckoutWithApprovalUseCase } from '../../core/use-cases/checkout/checkout-with-approval.use-case.js';
+import type { ValidatePromoCodeUseCase } from '../../core/use-cases/checkout/validate-promo-code.use-case.js';
+import type { GetPaymentMethodsConfigUseCase } from '../../core/use-cases/checkout/get-payment-methods-config.use-case.js';
+import type { CheckoutInitDto, CheckoutApprovalDto, CheckoutUpdateDto } from '../../core/use-cases/checkout/checkout.types.js';
 import { authGuard } from '../middleware/auth.guard.js';
 import { buildRequestContext } from '../middleware/request-context.js';
+import { createRateLimitGuard } from '../middleware/rate-limit.guard.js';
 import {
   initCheckoutBodySchema,
+  approvalCheckoutBodySchema,
   updateCheckoutBodySchema,
   cancelCheckoutParamsSchema,
   validatePromoBodySchema,
@@ -32,19 +39,21 @@ async function optionalAuthGuard(request: unknown, reply: unknown) {
   }
 }
 
+const checkoutRateLimit = createRateLimitGuard({ endpoint: 'checkout', limit: 20, windowMinutes: 1 });
+
 export async function checkoutRoutes(app: FastifyInstance) {
   app.post<{ Body: CheckoutInitDto }>(
     '/',
     {
-      preHandler: [optionalAuthGuard],
+      preHandler: [checkoutRateLimit, optionalAuthGuard],
       schema: { body: initCheckoutBodySchema },
     },
     async (request, reply) => {
-      const checkoutService = container.resolve<ICheckoutService>(TOKENS.CheckoutService);
+      const initCheckout = container.resolve<InitializeCheckoutUseCase>(UC_TOKENS.InitializeCheckout);
       const user = tryGetAuthUser(request);
       const reqCtx = buildRequestContext(request, request.body as unknown as Record<string, unknown>);
 
-      const result = await checkoutService.initializeCheckout(dto(request.body), user?.id, reqCtx.clientIP);
+      const result = await initCheckout.execute(dto(request.body), user?.id, reqCtx.clientIP);
       return reply.send(result);
     },
   );
@@ -56,10 +65,10 @@ export async function checkoutRoutes(app: FastifyInstance) {
       schema: { body: updateCheckoutBodySchema },
     },
     async (request, reply) => {
-      const checkoutService = container.resolve<ICheckoutService>(TOKENS.CheckoutService);
+      const updateCheckout = container.resolve<UpdateCheckoutUseCase>(UC_TOKENS.UpdateCheckout);
       const user = tryGetAuthUser(request);
 
-      const result = await checkoutService.updateCheckout(request.body, user?.id);
+      const result = await updateCheckout.execute(request.body, user?.id);
       return reply.send(result);
     },
   );
@@ -71,11 +80,36 @@ export async function checkoutRoutes(app: FastifyInstance) {
       schema: { params: cancelCheckoutParamsSchema },
     },
     async (request, reply) => {
-      const checkoutService = container.resolve<ICheckoutService>(TOKENS.CheckoutService);
+      const cancelCheckout = container.resolve<CancelCheckoutUseCase>(UC_TOKENS.CancelCheckout);
       const user = tryGetAuthUser(request);
 
-      await checkoutService.cancelCheckout(request.params.orderId, user?.id);
+      await cancelCheckout.execute(request.params.orderId, user?.id);
       return reply.send({ success: true });
+    },
+  );
+
+  app.post<{ Body: CheckoutApprovalDto }>(
+    '/approval',
+    {
+      preHandler: [optionalAuthGuard],
+      schema: { body: approvalCheckoutBodySchema },
+    },
+    async (request, reply) => {
+      const checkoutWithApproval = container.resolve<CheckoutWithApprovalUseCase>(UC_TOKENS.CheckoutWithApproval);
+      const user = tryGetAuthUser(request);
+      const reqCtx = buildRequestContext(request, request.body as unknown as Record<string, unknown>);
+
+      const result = await checkoutWithApproval.execute(request.body, user?.id, reqCtx.clientIP);
+      return reply.send(result);
+    },
+  );
+
+  app.get(
+    '/payment-methods',
+    async (_request, reply) => {
+      const getConfig = container.resolve<GetPaymentMethodsConfigUseCase>(UC_TOKENS.GetPaymentMethodsConfig);
+      const config = await getConfig.execute();
+      return reply.send(config);
     },
   );
 
@@ -85,10 +119,10 @@ export async function checkoutRoutes(app: FastifyInstance) {
       schema: { body: validatePromoBodySchema },
     },
     async (request, reply) => {
-      const checkoutService = container.resolve<ICheckoutService>(TOKENS.CheckoutService);
+      const validatePromo = container.resolve<ValidatePromoCodeUseCase>(UC_TOKENS.ValidatePromoCode);
       const user = tryGetAuthUser(request);
 
-      const result = await checkoutService.validatePromoCode(
+      const result = await validatePromo.execute(
         request.body.code,
         request.body.items,
         user?.id,
@@ -106,5 +140,9 @@ function dto(body: CheckoutInitDto): CheckoutInitDto {
     session_id: body.session_id,
     fingerprint_hash: body.fingerprint_hash,
     recaptcha_token: body.recaptcha_token,
+    wallet_redeem_cents: body.wallet_redeem_cents,
+    customer_email: body.customer_email,
+    customer_name: body.customer_name,
+    billing_address: body.billing_address,
   };
 }

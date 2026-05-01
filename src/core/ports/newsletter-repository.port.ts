@@ -1,4 +1,4 @@
-import type { NewsletterSubscribeDto, NewsletterResult } from '../services/newsletter/newsletter.types.js';
+import type { NewsletterSubscribeDto, NewsletterResult } from '../use-cases/newsletter/newsletter.types.js';
 
 export interface INewsletterRepository {
   subscribe(params: NewsletterSubscribeDto): Promise<NewsletterResult>;

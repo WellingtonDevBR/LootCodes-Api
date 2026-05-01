@@ -2,7 +2,7 @@ import { injectable, inject } from 'tsyringe';
 import { TOKENS } from '../../di/tokens.js';
 import type { IDatabase } from '../../core/ports/database.port.js';
 import type { IWalletRepository } from '../../core/ports/wallet-repository.port.js';
-import type { WalletBalance, WalletLedgerEntry, LedgerPaginationParams, OrderEarnings } from '../../core/services/wallet/wallet.types.js';
+import type { WalletBalance, WalletLedgerEntry, LedgerPaginationParams, OrderEarnings } from '../../core/use-cases/wallet/wallet.types.js';
 import { createLogger } from '../../shared/logger.js';
 
 const logger = createLogger('supabase-wallet-repository');
@@ -35,6 +35,14 @@ export class SupabaseWalletRepository implements IWalletRepository {
     return this.db.rpc<OrderEarnings[]>('get_order_earnings', {
       p_user_id: userId,
       p_order_ids: orderIds,
+    });
+  }
+
+  async claimReviewReward(userId: string, reviewId: string): Promise<{ credited: boolean; amount_cents: number }> {
+    logger.info('Claiming review reward', { userId, reviewId });
+    return this.db.rpc<{ credited: boolean; amount_cents: number }>('claim_review_reward', {
+      p_user_id: userId,
+      p_review_id: reviewId,
     });
   }
 }

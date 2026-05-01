@@ -1,9 +1,17 @@
 import type { FastifyInstance } from 'fastify';
 import { container } from 'tsyringe';
-import { TOKENS } from '../../di/tokens.js';
-import type { ISupportService } from '../../core/ports/support-service.port.js';
-import type { CreateTicketDto, AddMessageDto, TicketFeedbackDto } from '../../core/services/support/support.types.js';
+import { UC_TOKENS } from '../../di/tokens.js';
+import type { CreateTicketUseCase } from '../../core/use-cases/support/create-ticket.use-case.js';
+import type { GetTicketUseCase } from '../../core/use-cases/support/get-ticket.use-case.js';
+import type { GetUserTicketsUseCase } from '../../core/use-cases/support/get-user-tickets.use-case.js';
+import type { AddMessageUseCase } from '../../core/use-cases/support/add-message.use-case.js';
+import type { UpdateStatusUseCase } from '../../core/use-cases/support/update-status.use-case.js';
+import type { SubmitFeedbackUseCase } from '../../core/use-cases/support/submit-feedback.use-case.js';
+import type { GetVerificationTicketsUseCase } from '../../core/use-cases/support/get-verification-tickets.use-case.js';
+import type { UploadAttachmentUseCase } from '../../core/use-cases/support/upload-attachment.use-case.js';
+import type { CreateTicketDto, AddMessageDto, TicketFeedbackDto } from '../../core/use-cases/support/support.types.js';
 import { authGuard } from '../middleware/auth.guard.js';
+import { ValidationError } from '../../core/errors/domain-errors.js';
 import {
   createTicketBodySchema,
   ticketNumberParamsSchema,
@@ -46,10 +54,10 @@ export async function supportRoutes(app: FastifyInstance) {
       schema: { body: createTicketBodySchema },
     },
     async (request, reply) => {
-      const supportService = container.resolve<ISupportService>(TOKENS.SupportService);
+      const uc = container.resolve<CreateTicketUseCase>(UC_TOKENS.CreateTicket);
       const user = tryGetAuthUser(request);
 
-      const ticket = await supportService.createTicket(request.body, user?.id);
+      const ticket = await uc.execute(request.body, user?.id);
       return reply.code(201).send(ticket);
     },
   );
@@ -61,10 +69,10 @@ export async function supportRoutes(app: FastifyInstance) {
       schema: { params: ticketNumberParamsSchema },
     },
     async (request, reply) => {
-      const supportService = container.resolve<ISupportService>(TOKENS.SupportService);
+      const uc = container.resolve<GetTicketUseCase>(UC_TOKENS.GetTicket);
       const user = tryGetAuthUser(request);
 
-      const detail = await supportService.getTicket(request.params.ticketNumber, user?.id);
+      const detail = await uc.execute(request.params.ticketNumber, user?.id);
       return reply.send(detail);
     },
   );
@@ -75,10 +83,10 @@ export async function supportRoutes(app: FastifyInstance) {
       preHandler: [authGuard],
     },
     async (request, reply) => {
-      const supportService = container.resolve<ISupportService>(TOKENS.SupportService);
+      const uc = container.resolve<GetUserTicketsUseCase>(UC_TOKENS.GetUserTickets);
       const user = getAuthUser(request);
 
-      const tickets = await supportService.getUserTickets(user.id);
+      const tickets = await uc.execute(user.id);
       return reply.send({ tickets });
     },
   );
@@ -90,10 +98,10 @@ export async function supportRoutes(app: FastifyInstance) {
       schema: { body: addMessageBodySchema },
     },
     async (request, reply) => {
-      const supportService = container.resolve<ISupportService>(TOKENS.SupportService);
+      const uc = container.resolve<AddMessageUseCase>(UC_TOKENS.AddMessage);
       const user = getAuthUser(request);
 
-      await supportService.addMessage(request.body, user.id);
+      await uc.execute(request.body, user.id);
       return reply.send({ success: true });
     },
   );
@@ -105,10 +113,10 @@ export async function supportRoutes(app: FastifyInstance) {
       schema: { params: ticketNumberParamsSchema, body: updateStatusBodySchema },
     },
     async (request, reply) => {
-      const supportService = container.resolve<ISupportService>(TOKENS.SupportService);
+      const uc = container.resolve<UpdateStatusUseCase>(UC_TOKENS.UpdateTicketStatus);
       const user = getAuthUser(request);
 
-      await supportService.updateStatus(
+      await uc.execute(
         request.params.ticketNumber,
         request.body.status,
         user.id,
@@ -125,11 +133,12 @@ export async function supportRoutes(app: FastifyInstance) {
       schema: { params: ticketNumberParamsSchema, body: reopenTicketBodySchema },
     },
     async (request, reply) => {
-      const supportService = container.resolve<ISupportService>(TOKENS.SupportService);
+      const uc = container.resolve<UpdateStatusUseCase>(UC_TOKENS.UpdateTicketStatus);
       const user = getAuthUser(request);
 
-      await supportService.reopenTicket(
+      await uc.execute(
         request.params.ticketNumber,
+        'open',
         user.id,
         request.body.reason,
       );
@@ -144,10 +153,10 @@ export async function supportRoutes(app: FastifyInstance) {
       schema: { body: submitFeedbackBodySchema },
     },
     async (request, reply) => {
-      const supportService = container.resolve<ISupportService>(TOKENS.SupportService);
+      const uc = container.resolve<SubmitFeedbackUseCase>(UC_TOKENS.SubmitFeedback);
       const user = tryGetAuthUser(request);
 
-      await supportService.submitFeedback(request.body, user?.id);
+      await uc.execute(request.body, user?.id);
       return reply.send({ success: true });
     },
   );
@@ -159,14 +168,46 @@ export async function supportRoutes(app: FastifyInstance) {
       schema: { params: orderIdParamsSchema },
     },
     async (request, reply) => {
-      const supportService = container.resolve<ISupportService>(TOKENS.SupportService);
+      const uc = container.resolve<GetVerificationTicketsUseCase>(UC_TOKENS.GetVerificationTickets);
       const user = getAuthUser(request);
 
-      const tickets = await supportService.getVerificationTicketsForOrder(
-        request.params.orderId,
-        user.id,
-      );
+      const tickets = await uc.execute(request.params.orderId, user.id);
       return reply.send({ tickets });
+    },
+  );
+
+  app.post<{ Params: { ticketNumber: string } }>(
+    '/:ticketNumber/attachments',
+    {
+      preHandler: [authGuard],
+      schema: { params: ticketNumberParamsSchema },
+    },
+    async (request, reply) => {
+      const uc = container.resolve<UploadAttachmentUseCase>(UC_TOKENS.UploadAttachment);
+      const user = getAuthUser(request);
+
+      const data = await request.file();
+      if (!data) {
+        throw new ValidationError('No file uploaded');
+      }
+
+      const allowedMimes = [
+        'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+        'application/pdf', 'text/plain',
+      ];
+      if (!allowedMimes.includes(data.mimetype)) {
+        throw new ValidationError('Invalid file type');
+      }
+
+      const fileBuffer = await data.toBuffer();
+      const url = await uc.execute(
+        request.params.ticketNumber,
+        user.id,
+        fileBuffer,
+        data.filename,
+        data.mimetype,
+      );
+      return reply.send({ url });
     },
   );
 }

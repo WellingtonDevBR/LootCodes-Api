@@ -31,3 +31,12 @@ export const submitResponseBodySchema = {
   },
   additionalProperties: false,
 } as const;
+
+export const unlockAccountBodySchema = {
+  type: 'object',
+  required: ['token'],
+  properties: {
+    token: { type: 'string', minLength: 1, maxLength: 500 },
+  },
+  additionalProperties: false,
+} as const;

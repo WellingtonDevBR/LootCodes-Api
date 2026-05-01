@@ -1,4 +1,4 @@
-import type { Notification } from '../services/notifications/notification.types.js';
+import type { Notification } from '../use-cases/notifications/notification.types.js';
 
 export interface INotificationRepository {
   list(userId: string, limit?: number, offset?: number): Promise<Notification[]>;

@@ -1,4 +1,4 @@
-import type { Review, ProductRating, CreateReviewDto, ReviewEligibility, ReviewPaginationParams } from '../services/reviews/review.types.js';
+import type { Review, ProductRating, CreateReviewDto, ReviewEligibility, ReviewPaginationParams } from '../use-cases/reviews/review.types.js';
 
 export interface IReviewRepository {
   listByProduct(productId: string, pagination?: ReviewPaginationParams): Promise<Review[]>;

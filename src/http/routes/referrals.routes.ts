@@ -1,13 +1,14 @@
 import type { FastifyInstance } from 'fastify';
 import { container } from 'tsyringe';
-import { TOKENS } from '../../di/tokens.js';
-import type { IReferralService } from '../../core/ports/referral-service.port.js';
-import type { ListReferralsParams, GetLeaderboardParams, OpenDisputeParams } from '../../core/services/referrals/referral.types.js';
+import { UC_TOKENS } from '../../di/tokens.js';
+import type { GetReferralMeUseCase } from '../../core/use-cases/referrals/get-referral-me.use-case.js';
+import type { ListReferralsUseCase } from '../../core/use-cases/referrals/list-referrals.use-case.js';
+import type { GetLeaderboardUseCase } from '../../core/use-cases/referrals/get-leaderboard.use-case.js';
+import type { ListReferralsParams, GetLeaderboardParams } from '../../core/use-cases/referrals/referral.types.js';
 import { authGuard } from '../middleware/auth.guard.js';
 import {
   listReferralsQuerySchema,
   leaderboardQuerySchema,
-  openDisputeBodySchema,
 } from '../schemas/referrals.schema.js';
 
 interface AuthenticatedRequest {
@@ -15,14 +16,13 @@ interface AuthenticatedRequest {
 }
 
 export async function referralRoutes(app: FastifyInstance) {
-  const resolveService = () => container.resolve<IReferralService>(TOKENS.ReferralService);
-
   app.get(
     '/me',
     { preHandler: [authGuard] },
     async (request, reply) => {
       const { authUser } = request as unknown as AuthenticatedRequest;
-      const me = await resolveService().getMe(authUser.id);
+      const uc = container.resolve<GetReferralMeUseCase>(UC_TOKENS.GetReferralMe);
+      const me = await uc.execute(authUser.id);
       return reply.send(me);
     },
   );
@@ -32,7 +32,8 @@ export async function referralRoutes(app: FastifyInstance) {
     { preHandler: [authGuard], schema: { querystring: listReferralsQuerySchema } },
     async (request, reply) => {
       const { authUser } = request as unknown as AuthenticatedRequest;
-      const page = await resolveService().listReferrals(authUser.id, request.query);
+      const uc = container.resolve<ListReferralsUseCase>(UC_TOKENS.ListReferrals);
+      const page = await uc.execute(authUser.id, request.query);
       return reply.send(page);
     },
   );
@@ -41,18 +42,9 @@ export async function referralRoutes(app: FastifyInstance) {
     '/leaderboard',
     { schema: { querystring: leaderboardQuerySchema } },
     async (request, reply) => {
-      const leaderboard = await resolveService().getLeaderboard(request.query);
+      const uc = container.resolve<GetLeaderboardUseCase>(UC_TOKENS.GetLeaderboard);
+      const leaderboard = await uc.execute(request.query);
       return reply.send(leaderboard);
-    },
-  );
-
-  app.post<{ Body: OpenDisputeParams }>(
-    '/dispute',
-    { preHandler: [authGuard], schema: { body: openDisputeBodySchema } },
-    async (request, reply) => {
-      const { authUser } = request as unknown as AuthenticatedRequest;
-      const result = await resolveService().openDispute(authUser.id, request.body);
-      return reply.send(result);
     },
   );
 }

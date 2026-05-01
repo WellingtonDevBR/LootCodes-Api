@@ -1,4 +1,4 @@
-import type { ProductKey, KeyViewLog } from '../services/orders/order.types.js';
+import type { ProductKey, KeyViewLog, KeyAccessAttemptLog } from '../use-cases/orders/order.types.js';
 
 export interface IProductKeyRepository {
   getKeysForOrder(orderId: string, userId: string): Promise<ProductKey[]>;
@@ -6,4 +6,5 @@ export interface IProductKeyRepository {
   decryptKey(keyId: string): Promise<string>;
   logKeyView(log: KeyViewLog): Promise<void>;
   checkKeyViewed(keyId: string, orderId: string, userId: string): Promise<boolean>;
+  logAccessAttempt(params: KeyAccessAttemptLog): Promise<void>;
 }

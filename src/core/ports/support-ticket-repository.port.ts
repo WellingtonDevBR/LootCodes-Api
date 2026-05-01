@@ -1,4 +1,4 @@
-import type { SupportTicket, TicketMessage, CreateTicketDto, TicketDetail, TicketFeedbackDto } from '../services/support/support.types.js';
+import type { SupportTicket, TicketMessage, CreateTicketDto, TicketDetail, TicketFeedbackDto } from '../use-cases/support/support.types.js';
 
 export interface ISupportTicketRepository {
   create(params: CreateTicketDto & { user_id?: string }): Promise<SupportTicket>;

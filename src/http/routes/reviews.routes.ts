@@ -1,8 +1,11 @@
 import type { FastifyInstance } from 'fastify';
 import { container } from 'tsyringe';
-import { TOKENS } from '../../di/tokens.js';
-import type { IReviewService } from '../../core/ports/review-service.port.js';
-import type { CreateReviewDto, ReviewPaginationParams } from '../../core/services/reviews/review.types.js';
+import { UC_TOKENS } from '../../di/tokens.js';
+import type { GetProductReviewsUseCase } from '../../core/use-cases/reviews/get-product-reviews.use-case.js';
+import type { GetProductRatingUseCase } from '../../core/use-cases/reviews/get-product-rating.use-case.js';
+import type { SubmitReviewUseCase } from '../../core/use-cases/reviews/submit-review.use-case.js';
+import type { CheckEligibilityUseCase } from '../../core/use-cases/reviews/check-eligibility.use-case.js';
+import type { CreateReviewDto, ReviewPaginationParams } from '../../core/use-cases/reviews/review.types.js';
 import { authGuard } from '../middleware/auth.guard.js';
 import {
   productIdParamsSchema,
@@ -16,16 +19,12 @@ interface AuthenticatedRequest {
 }
 
 export async function reviewRoutes(app: FastifyInstance) {
-  const resolveService = () => container.resolve<IReviewService>(TOKENS.ReviewService);
-
   app.get<{ Params: { productId: string }; Querystring: ReviewPaginationParams }>(
     '/products/:productId',
     { schema: { params: productIdParamsSchema, querystring: reviewsPaginationQuerySchema } },
     async (request, reply) => {
-      const reviews = await resolveService().getProductReviews(
-        request.params.productId,
-        request.query,
-      );
+      const uc = container.resolve<GetProductReviewsUseCase>(UC_TOKENS.GetProductReviews);
+      const reviews = await uc.execute(request.params.productId, request.query);
       return reply.send(reviews);
     },
   );
@@ -34,7 +33,8 @@ export async function reviewRoutes(app: FastifyInstance) {
     '/products/:productId/rating',
     { schema: { params: productIdParamsSchema } },
     async (request, reply) => {
-      const rating = await resolveService().getProductRating(request.params.productId);
+      const uc = container.resolve<GetProductRatingUseCase>(UC_TOKENS.GetProductRating);
+      const rating = await uc.execute(request.params.productId);
       return reply.send(rating);
     },
   );
@@ -44,7 +44,8 @@ export async function reviewRoutes(app: FastifyInstance) {
     { preHandler: [authGuard], schema: { body: createReviewBodySchema } },
     async (request, reply) => {
       const { authUser } = request as unknown as AuthenticatedRequest;
-      const review = await resolveService().submitReview(authUser.id, request.body);
+      const uc = container.resolve<SubmitReviewUseCase>(UC_TOKENS.SubmitReview);
+      const review = await uc.execute(authUser.id, request.body);
       return reply.code(201).send(review);
     },
   );
@@ -54,10 +55,8 @@ export async function reviewRoutes(app: FastifyInstance) {
     { preHandler: [authGuard], schema: { params: eligibilityParamsSchema } },
     async (request, reply) => {
       const { authUser } = request as unknown as AuthenticatedRequest;
-      const eligibility = await resolveService().checkEligibility(
-        authUser.id,
-        request.params.productId,
-      );
+      const uc = container.resolve<CheckEligibilityUseCase>(UC_TOKENS.CheckEligibility);
+      const eligibility = await uc.execute(authUser.id, request.params.productId);
       return reply.send(eligibility);
     },
   );

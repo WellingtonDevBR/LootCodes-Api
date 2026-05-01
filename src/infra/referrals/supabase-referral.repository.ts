@@ -2,7 +2,7 @@ import { injectable, inject } from 'tsyringe';
 import { TOKENS } from '../../di/tokens.js';
 import type { IDatabase } from '../../core/ports/database.port.js';
 import type { IReferralRepository } from '../../core/ports/referral-repository.port.js';
-import type { ReferralMe, ReferralListPage, ReferralLeaderboardEntry, ListReferralsParams, GetLeaderboardParams, OpenDisputeParams, OpenDisputeResult } from '../../core/services/referrals/referral.types.js';
+import type { ReferralMe, ReferralListPage, ReferralLeaderboardEntry, ListReferralsParams, GetLeaderboardParams, OpenDisputeParams, OpenDisputeResult } from '../../core/use-cases/referrals/referral.types.js';
 import { createLogger } from '../../shared/logger.js';
 
 const logger = createLogger('supabase-referral-repository');

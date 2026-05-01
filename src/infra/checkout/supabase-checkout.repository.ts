@@ -2,6 +2,7 @@ import { injectable, inject } from 'tsyringe';
 import { TOKENS } from '../../di/tokens.js';
 import type { IDatabase } from '../../core/ports/database.port.js';
 import type { ICheckoutRepository, CreateOrderParams } from '../../core/ports/checkout-repository.port.js';
+import type { PaymentMethodsConfig } from '../../core/use-cases/checkout/checkout.types.js';
 
 @injectable()
 export class SupabaseCheckoutRepository implements ICheckoutRepository {
@@ -33,5 +34,16 @@ export class SupabaseCheckoutRepository implements ICheckoutRepository {
     return this.db.queryOne<Record<string, unknown>>('orders', {
       eq: [['id', orderId]],
     });
+  }
+
+  async getPaymentMethodsConfig(): Promise<PaymentMethodsConfig> {
+    const row = await this.db.queryOne<{ value: PaymentMethodsConfig }>('platform_settings', {
+      eq: [['key', 'payment_methods']],
+      select: 'value',
+    });
+    return row?.value ?? {
+      stripe: { card: true, google_pay: true, apple_pay: true, link: true },
+      paypal: { enabled: true },
+    };
   }
 }

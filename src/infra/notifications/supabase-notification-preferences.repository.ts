@@ -2,7 +2,7 @@ import { injectable, inject } from 'tsyringe';
 import { TOKENS } from '../../di/tokens.js';
 import type { IDatabase } from '../../core/ports/database.port.js';
 import type { INotificationPreferencesRepository } from '../../core/ports/notification-preferences-repository.port.js';
-import type { NotificationPreferences, UpdatePreferencesDto } from '../../core/services/notifications/notification.types.js';
+import type { NotificationPreferences, UpdatePreferencesDto } from '../../core/use-cases/notifications/notification.types.js';
 
 @injectable()
 export class SupabaseNotificationPreferencesRepository implements INotificationPreferencesRepository {

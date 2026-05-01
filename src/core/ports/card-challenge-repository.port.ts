@@ -4,7 +4,7 @@ import type {
   VerifyChallengeDto,
   VerifyChallengeResult,
   ChooseIdResult,
-} from '../services/card-challenge/card-challenge.types.js';
+} from '../use-cases/card-challenge/card-challenge.types.js';
 
 export interface ICardChallengeRepository {
   findById(challengeId: string): Promise<CardChallenge | null>;

@@ -1,6 +1,6 @@
 import { injectable } from 'tsyringe';
 import type { IRiskAssessor } from '../../core/ports/risk-assessor.port.js';
-import type { RiskAssessmentInput, RiskAssessment } from '../../core/services/payments/payment.types.js';
+import type { RiskAssessmentInput, RiskAssessment } from '../../core/use-cases/payments/payment.types.js';
 import { createLogger } from '../../shared/logger.js';
 
 const logger = createLogger('stub-risk-assessor');

@@ -1,8 +1,11 @@
 import type { FastifyInstance } from 'fastify';
 import { container } from 'tsyringe';
-import { TOKENS } from '../../di/tokens.js';
-import type { IPriceMatchService } from '../../core/ports/price-match-service.port.js';
-import type { PriceMatchClaimSubmission } from '../../core/services/price-match/price-match.types.js';
+import { UC_TOKENS } from '../../di/tokens.js';
+import type { SubmitClaimUseCase } from '../../core/use-cases/price-match/submit-claim.use-case.js';
+import type { GetUserClaimsUseCase } from '../../core/use-cases/price-match/get-user-claims.use-case.js';
+import type { GetConfigUseCase } from '../../core/use-cases/price-match/get-config.use-case.js';
+import type { GetClaimPromoCodeUseCase } from '../../core/use-cases/price-match/get-claim-promo-code.use-case.js';
+import type { PriceMatchClaimSubmission } from '../../core/use-cases/price-match/price-match.types.js';
 import { authGuard } from '../middleware/auth.guard.js';
 import { submitClaimBodySchema, claimIdParamsSchema } from '../schemas/price-match.schema.js';
 
@@ -31,8 +34,6 @@ async function optionalAuthGuard(request: unknown, reply: unknown) {
 }
 
 export async function priceMatchRoutes(app: FastifyInstance) {
-  const resolveService = () => container.resolve<IPriceMatchService>(TOKENS.PriceMatchService);
-
   app.post<{ Body: Omit<PriceMatchClaimSubmission, 'user_id'> }>(
     '/claim',
     {
@@ -40,14 +41,14 @@ export async function priceMatchRoutes(app: FastifyInstance) {
       schema: { body: submitClaimBodySchema },
     },
     async (request, reply) => {
+      const uc = container.resolve<SubmitClaimUseCase>(UC_TOKENS.SubmitClaim);
       const user = tryGetAuthUser(request);
       const submission: PriceMatchClaimSubmission = {
         ...request.body,
         user_id: user?.id ?? null,
         guest_email: request.body.guest_email ?? null,
       };
-
-      const result = await resolveService().submitClaim(submission, request.ip);
+      const result = await uc.execute(submission, request.ip);
       return reply.code(201).send(result);
     },
   );
@@ -56,8 +57,9 @@ export async function priceMatchRoutes(app: FastifyInstance) {
     '/claims',
     { preHandler: [authGuard] },
     async (request, reply) => {
+      const uc = container.resolve<GetUserClaimsUseCase>(UC_TOKENS.GetUserClaims);
       const user = getAuthUser(request);
-      const claims = await resolveService().getUserClaims(user.id);
+      const claims = await uc.execute(user.id);
       return reply.send({ claims });
     },
   );
@@ -65,7 +67,8 @@ export async function priceMatchRoutes(app: FastifyInstance) {
   app.get(
     '/config',
     async (_request, reply) => {
-      const config = await resolveService().getConfig();
+      const uc = container.resolve<GetConfigUseCase>(UC_TOKENS.GetPriceMatchConfig);
+      const config = await uc.execute();
       return reply.send(config ?? { enabled: false });
     },
   );
@@ -77,8 +80,9 @@ export async function priceMatchRoutes(app: FastifyInstance) {
       schema: { params: claimIdParamsSchema },
     },
     async (request, reply) => {
+      const uc = container.resolve<GetClaimPromoCodeUseCase>(UC_TOKENS.GetClaimPromoCode);
       const user = getAuthUser(request);
-      const code = await resolveService().getClaimPromoCode(user.id, request.params.id);
+      const code = await uc.execute(user.id, request.params.id);
       return reply.send({ code });
     },
   );

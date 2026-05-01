@@ -40,6 +40,8 @@ export const guestSessionExchangeBodySchema = {
   required: ['token'],
   properties: {
     token: { type: 'string', minLength: 1 },
+    order_id: { type: 'string', format: 'uuid' },
+    email: { type: 'string', format: 'email' },
   },
   additionalProperties: false,
 } as const;

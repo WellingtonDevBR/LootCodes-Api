@@ -2,7 +2,7 @@ import { injectable, inject } from 'tsyringe';
 import { TOKENS } from '../../di/tokens.js';
 import type { IDatabase } from '../../core/ports/database.port.js';
 import type { INewsletterRepository } from '../../core/ports/newsletter-repository.port.js';
-import type { NewsletterSubscribeDto, NewsletterResult } from '../../core/services/newsletter/newsletter.types.js';
+import type { NewsletterSubscribeDto, NewsletterResult } from '../../core/use-cases/newsletter/newsletter.types.js';
 import { createLogger } from '../../shared/logger.js';
 
 const logger = createLogger('supabase-newsletter-repository');

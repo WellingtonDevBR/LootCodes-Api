@@ -2,7 +2,7 @@ import { injectable, inject } from 'tsyringe';
 import { TOKENS } from '../../di/tokens.js';
 import type { IDatabase } from '../../core/ports/database.port.js';
 import type { IOrderAccessTokenRepository } from '../../core/ports/order-access-token-repository.port.js';
-import type { OrderAccessToken } from '../../core/services/orders/order.types.js';
+import type { OrderAccessToken } from '../../core/use-cases/orders/order.types.js';
 
 @injectable()
 export class SupabaseOrderAccessTokenRepository implements IOrderAccessTokenRepository {

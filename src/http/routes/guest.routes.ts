@@ -1,9 +1,12 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { container } from 'tsyringe';
-import { TOKENS } from '../../di/tokens.js';
-import type { IGuestAccessService } from '../../core/ports/guest-access-service.port.js';
+import { TOKENS, UC_TOKENS } from '../../di/tokens.js';
 import type { IGuestSessionRepository } from '../../core/ports/guest-session.port.js';
-import type { CreateTicketDto } from '../../core/services/support/support.types.js';
+import type { GetGuestOrderUseCase } from '../../core/use-cases/guest/get-guest-order.use-case.js';
+import type { GetGuestOrderKeysUseCase } from '../../core/use-cases/guest/get-guest-order-keys.use-case.js';
+import type { RevealGuestKeyUseCase } from '../../core/use-cases/guest/reveal-guest-key.use-case.js';
+import type { CreateGuestSupportTicketUseCase } from '../../core/use-cases/guest/create-guest-support-ticket.use-case.js';
+import type { CreateTicketDto } from '../../core/use-cases/support/support.types.js';
 import { AuthenticationError } from '../../core/errors/domain-errors.js';
 import { buildRequestContext } from '../middleware/request-context.js';
 import {
@@ -34,17 +37,19 @@ function extractGuestToken(request: FastifyRequest): string {
 }
 
 export async function guestRoutes(app: FastifyInstance) {
-  app.post<{ Body: { token: string } }>(
+  app.post<{ Body: { token: string; order_id?: string; email?: string } }>(
     '/session',
-    {
-      schema: { body: guestSessionExchangeBodySchema },
-    },
+    { schema: { body: guestSessionExchangeBodySchema } },
     async (request, reply) => {
       const guestSessionRepo = container.resolve<IGuestSessionRepository>(TOKENS.GuestSessionRepository);
       const session = await guestSessionRepo.exchangeToken(request.body.token);
 
       if (!session) {
         throw new AuthenticationError('Invalid or expired guest token');
+      }
+
+      if (request.body.order_id && session.order_id !== request.body.order_id) {
+        throw new AuthenticationError('Token does not match the provided order');
       }
 
       return reply.send({
@@ -57,64 +62,51 @@ export async function guestRoutes(app: FastifyInstance) {
 
   app.get<{ Params: { orderId: string } }>(
     '/orders/:orderId',
-    {
-      schema: { params: guestOrderParamsSchema },
-    },
+    { schema: { params: guestOrderParamsSchema } },
     async (request, reply) => {
-      const guestService = container.resolve<IGuestAccessService>(TOKENS.GuestAccessService);
+      const uc = container.resolve<GetGuestOrderUseCase>(UC_TOKENS.GetGuestOrder);
       const token = extractGuestToken(request);
-
-      const detail = await guestService.getGuestOrder(token, request.params.orderId);
+      const detail = await uc.execute(token, request.params.orderId);
       return reply.send(detail);
     },
   );
 
   app.get<{ Params: { orderId: string } }>(
     '/orders/:orderId/keys',
-    {
-      schema: { params: guestOrderParamsSchema },
-    },
+    { schema: { params: guestOrderParamsSchema } },
     async (request, reply) => {
-      const guestService = container.resolve<IGuestAccessService>(TOKENS.GuestAccessService);
+      const uc = container.resolve<GetGuestOrderKeysUseCase>(UC_TOKENS.GetGuestOrderKeys);
       const token = extractGuestToken(request);
-
-      const keys = await guestService.getGuestOrderKeys(token, request.params.orderId);
+      const keys = await uc.execute(token, request.params.orderId);
       return reply.send({ keys });
     },
   );
 
   app.post<{ Body: { order_id: string; key_id: string } }>(
     '/keys/reveal',
-    {
-      schema: { body: guestRevealKeyBodySchema },
-    },
+    { schema: { body: guestRevealKeyBodySchema } },
     async (request, reply) => {
-      const guestService = container.resolve<IGuestAccessService>(TOKENS.GuestAccessService);
+      const uc = container.resolve<RevealGuestKeyUseCase>(UC_TOKENS.RevealGuestKey);
       const token = extractGuestToken(request);
       const reqCtx = buildRequestContext(request);
-
-      const decryptedKey = await guestService.revealGuestKey(
+      const decryptedKey = await uc.execute(
         token,
         request.body.order_id,
         request.body.key_id,
         reqCtx.clientIP,
         reqCtx.userAgent ?? 'unknown',
       );
-
       return reply.send({ key: decryptedKey });
     },
   );
 
   app.post<{ Body: CreateTicketDto }>(
     '/support-tickets',
-    {
-      schema: { body: guestCreateTicketBodySchema },
-    },
+    { schema: { body: guestCreateTicketBodySchema } },
     async (request, reply) => {
-      const guestService = container.resolve<IGuestAccessService>(TOKENS.GuestAccessService);
+      const uc = container.resolve<CreateGuestSupportTicketUseCase>(UC_TOKENS.CreateGuestSupportTicket);
       const token = extractGuestToken(request);
-
-      const ticket = await guestService.createGuestSupportTicket(token, request.body);
+      const ticket = await uc.execute(token, request.body);
       return reply.code(201).send(ticket);
     },
   );

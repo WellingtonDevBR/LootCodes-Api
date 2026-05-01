@@ -2,7 +2,7 @@ import { injectable, inject } from 'tsyringe';
 import { TOKENS } from '../../di/tokens.js';
 import type { IDatabase } from '../../core/ports/database.port.js';
 import type { ISessionRepository } from '../../core/ports/session-repository.port.js';
-import type { UserSession, UpsertSessionDto } from '../../core/services/profile/profile.types.js';
+import type { UserSession, UpsertSessionDto } from '../../core/use-cases/profile/profile.types.js';
 
 @injectable()
 export class SupabaseSessionRepository implements ISessionRepository {

@@ -1,4 +1,4 @@
-import type { NotificationPreferences, UpdatePreferencesDto } from '../services/notifications/notification.types.js';
+import type { NotificationPreferences, UpdatePreferencesDto } from '../use-cases/notifications/notification.types.js';
 
 export interface INotificationPreferencesRepository {
   get(userId: string): Promise<NotificationPreferences | null>;

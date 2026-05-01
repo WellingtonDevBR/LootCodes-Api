@@ -1,6 +1,6 @@
 import { injectable } from 'tsyringe';
 import type { IFulfillmentService } from '../../core/ports/fulfillment-service.port.js';
-import type { FulfillmentResult } from '../../core/services/payments/payment.types.js';
+import type { FulfillmentResult } from '../../core/use-cases/payments/payment.types.js';
 import { createLogger } from '../../shared/logger.js';
 
 const logger = createLogger('stub-fulfillment');
