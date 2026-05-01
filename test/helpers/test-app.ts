@@ -64,12 +64,87 @@ import { GetLocalizedPriceUseCase } from '../../src/core/use-cases/products/pric
 import { GetBatchLocalizedPricesUseCase } from '../../src/core/use-cases/products/pricing/get-batch-localized-prices.use-case.js';
 import { HasPricesForCurrencyUseCase } from '../../src/core/use-cases/products/pricing/has-prices-for-currency.use-case.js';
 import { SyncCurrencyRatesUseCase } from '../../src/core/use-cases/products/pricing/sync-currency-rates.use-case.js';
+import { ConvertCartPricesUseCase } from '../../src/core/use-cases/products/pricing/convert-cart-prices.use-case.js';
 import { IsCountryAllowedUseCase } from '../../src/core/use-cases/products/geo/is-country-allowed.use-case.js';
 import { GetExcludedCountriesUseCase } from '../../src/core/use-cases/products/geo/get-excluded-countries.use-case.js';
 import { GetRestrictedVariantsUseCase } from '../../src/core/use-cases/products/geo/get-restricted-variants.use-case.js';
 import { GetRestrictedRegionsUseCase } from '../../src/core/use-cases/products/geo/get-restricted-regions.use-case.js';
 import { GetActivePromoHeaderUseCase } from '../../src/core/use-cases/products/storefront/get-active-promo-header.use-case.js';
 import { GetTrustpilotDataUseCase } from '../../src/core/use-cases/products/storefront/get-trustpilot-data.use-case.js';
+
+// Payment use cases
+import { VerifyAndFulfillUseCase } from '../../src/core/use-cases/payments/verify-and-fulfill.use-case.js';
+import { CapturePaymentUseCase } from '../../src/core/use-cases/payments/capture-payment.use-case.js';
+
+// Webhook use cases
+import { HandleStripeWebhookUseCase } from '../../src/core/use-cases/webhooks/handle-stripe-webhook.use-case.js';
+import { HandlePayPalWebhookUseCase } from '../../src/core/use-cases/webhooks/handle-paypal-webhook.use-case.js';
+
+// Guest use cases
+import { ExchangeGuestSessionUseCase } from '../../src/core/use-cases/guest/exchange-guest-session.use-case.js';
+import { GetGuestOrderUseCase } from '../../src/core/use-cases/guest/get-guest-order.use-case.js';
+import { GetGuestOrderKeysUseCase } from '../../src/core/use-cases/guest/get-guest-order-keys.use-case.js';
+import { RevealGuestKeyUseCase } from '../../src/core/use-cases/guest/reveal-guest-key.use-case.js';
+import { CreateGuestSupportTicketUseCase } from '../../src/core/use-cases/guest/create-guest-support-ticket.use-case.js';
+
+// Analytics use cases
+import { GeolocateUseCase } from '../../src/core/use-cases/analytics/geolocate.use-case.js';
+import { TrackBatchUseCase } from '../../src/core/use-cases/analytics/track-batch.use-case.js';
+import { TrackCartEventUseCase } from '../../src/core/use-cases/analytics/track-cart-event.use-case.js';
+import { UpdateSessionOutcomeUseCase } from '../../src/core/use-cases/analytics/update-session-outcome.use-case.js';
+import { TrackProductViewDurationUseCase } from '../../src/core/use-cases/analytics/track-product-view-duration.use-case.js';
+import { TrackSearchEventUseCase } from '../../src/core/use-cases/analytics/track-search-event.use-case.js';
+
+// Wallet use cases
+import { GetBalanceUseCase } from '../../src/core/use-cases/wallet/get-balance.use-case.js';
+import { ListLedgerUseCase } from '../../src/core/use-cases/wallet/list-ledger.use-case.js';
+import { GetOrderEarningsUseCase } from '../../src/core/use-cases/wallet/get-order-earnings.use-case.js';
+import { ClaimReviewRewardUseCase } from '../../src/core/use-cases/wallet/claim-review-reward.use-case.js';
+
+// Newsletter use cases
+import { SubscribeUseCase } from '../../src/core/use-cases/newsletter/subscribe.use-case.js';
+import { ConfirmUseCase } from '../../src/core/use-cases/newsletter/confirm.use-case.js';
+import { UnsubscribeUseCase as NewsletterUnsubscribeUseCase } from '../../src/core/use-cases/newsletter/unsubscribe.use-case.js';
+
+// Referral use cases
+import { GetReferralMeUseCase } from '../../src/core/use-cases/referrals/get-referral-me.use-case.js';
+import { ListReferralsUseCase } from '../../src/core/use-cases/referrals/list-referrals.use-case.js';
+import { GetLeaderboardUseCase } from '../../src/core/use-cases/referrals/get-leaderboard.use-case.js';
+
+// Recommendation use cases
+import { GetSimilarUseCase } from '../../src/core/use-cases/recommendations/get-similar.use-case.js';
+import { GetAlsoViewedUseCase } from '../../src/core/use-cases/recommendations/get-also-viewed.use-case.js';
+import { GetBoughtTogetherUseCase } from '../../src/core/use-cases/recommendations/get-bought-together.use-case.js';
+import { GetBatchRecommendationsUseCase } from '../../src/core/use-cases/recommendations/get-batch-recommendations.use-case.js';
+import { GetPersonalizedUseCase } from '../../src/core/use-cases/recommendations/get-personalized.use-case.js';
+import { GetPopularUseCase } from '../../src/core/use-cases/recommendations/get-popular.use-case.js';
+import { GetLatestReleasesUseCase } from '../../src/core/use-cases/recommendations/get-latest-releases.use-case.js';
+import { GetPreOrdersUseCase } from '../../src/core/use-cases/recommendations/get-pre-orders.use-case.js';
+
+// Search use cases
+import { SearchUseCase } from '../../src/core/use-cases/search/search.use-case.js';
+import { MerchandisedSearchUseCase } from '../../src/core/use-cases/search/merchandised-search.use-case.js';
+
+// Security use cases
+import { GetHoldUseCase } from '../../src/core/use-cases/security/get-hold.use-case.js';
+import { GetHoldStatusUseCase } from '../../src/core/use-cases/security/get-hold-status.use-case.js';
+import { UploadDocumentUseCase } from '../../src/core/use-cases/security/upload-document.use-case.js';
+import { SubmitResponseUseCase } from '../../src/core/use-cases/security/submit-response.use-case.js';
+import { UnlockAccountUseCase } from '../../src/core/use-cases/security/unlock-account.use-case.js';
+
+// Card challenge use cases
+import { StartChallengeUseCase } from '../../src/core/use-cases/card-challenge/start-challenge.use-case.js';
+import { VerifyChallengeUseCase } from '../../src/core/use-cases/card-challenge/verify-challenge.use-case.js';
+import { ChooseIdUseCase } from '../../src/core/use-cases/card-challenge/choose-id.use-case.js';
+
+// Price match use cases
+import { SubmitClaimUseCase } from '../../src/core/use-cases/price-match/submit-claim.use-case.js';
+import { GetUserClaimsUseCase } from '../../src/core/use-cases/price-match/get-user-claims.use-case.js';
+import { GetConfigUseCase } from '../../src/core/use-cases/price-match/get-config.use-case.js';
+import { GetClaimPromoCodeUseCase } from '../../src/core/use-cases/price-match/get-claim-promo-code.use-case.js';
+
+// Order use cases (additional)
+import { LogAccessAttemptUseCase } from '../../src/core/use-cases/orders/log-access-attempt.use-case.js';
 
 // Order use cases
 import { GetOrderUseCase } from '../../src/core/use-cases/orders/get-order.use-case.js';
@@ -441,6 +516,83 @@ function registerMocks(): TestMocks {
   container.register(UC_TOKENS.GetRestrictedRegions, { useClass: GetRestrictedRegionsUseCase });
   container.register(UC_TOKENS.GetActivePromoHeader, { useClass: GetActivePromoHeaderUseCase });
   container.register(UC_TOKENS.GetTrustpilotData, { useClass: GetTrustpilotDataUseCase });
+
+  // Analytics use cases
+  container.register(UC_TOKENS.Geolocate, { useClass: GeolocateUseCase });
+  container.register(UC_TOKENS.TrackBatch, { useClass: TrackBatchUseCase });
+  container.register(UC_TOKENS.TrackCartEvent, { useClass: TrackCartEventUseCase });
+  container.register(UC_TOKENS.UpdateSessionOutcome, { useClass: UpdateSessionOutcomeUseCase });
+  container.register(UC_TOKENS.TrackProductViewDuration, { useClass: TrackProductViewDurationUseCase });
+  container.register(UC_TOKENS.TrackSearchEvent, { useClass: TrackSearchEventUseCase });
+
+  // Wallet use cases
+  container.register(UC_TOKENS.GetBalance, { useClass: GetBalanceUseCase });
+  container.register(UC_TOKENS.ListLedger, { useClass: ListLedgerUseCase });
+  container.register(UC_TOKENS.GetOrderEarnings, { useClass: GetOrderEarningsUseCase });
+  container.register(UC_TOKENS.ClaimReviewReward, { useClass: ClaimReviewRewardUseCase });
+
+  // Payment use cases
+  container.register(UC_TOKENS.VerifyAndFulfill, { useClass: VerifyAndFulfillUseCase });
+  container.register(UC_TOKENS.CapturePayment, { useClass: CapturePaymentUseCase });
+
+  // Webhook use cases
+  container.register(UC_TOKENS.HandleStripeWebhook, { useClass: HandleStripeWebhookUseCase });
+  container.register(UC_TOKENS.HandlePayPalWebhook, { useClass: HandlePayPalWebhookUseCase });
+
+  // Guest use cases
+  container.register(UC_TOKENS.ExchangeGuestSession, { useClass: ExchangeGuestSessionUseCase });
+  container.register(UC_TOKENS.GetGuestOrder, { useClass: GetGuestOrderUseCase });
+  container.register(UC_TOKENS.GetGuestOrderKeys, { useClass: GetGuestOrderKeysUseCase });
+  container.register(UC_TOKENS.RevealGuestKey, { useClass: RevealGuestKeyUseCase });
+  container.register(UC_TOKENS.CreateGuestSupportTicket, { useClass: CreateGuestSupportTicketUseCase });
+
+  // Newsletter use cases
+  container.register(UC_TOKENS.Subscribe, { useClass: SubscribeUseCase });
+  container.register(UC_TOKENS.Confirm, { useClass: ConfirmUseCase });
+  container.register(UC_TOKENS.Unsubscribe, { useClass: NewsletterUnsubscribeUseCase });
+
+  // Referral use cases
+  container.register(UC_TOKENS.GetReferralMe, { useClass: GetReferralMeUseCase });
+  container.register(UC_TOKENS.ListReferrals, { useClass: ListReferralsUseCase });
+  container.register(UC_TOKENS.GetLeaderboard, { useClass: GetLeaderboardUseCase });
+
+  // Recommendation use cases
+  container.register(UC_TOKENS.GetSimilar, { useClass: GetSimilarUseCase });
+  container.register(UC_TOKENS.GetAlsoViewed, { useClass: GetAlsoViewedUseCase });
+  container.register(UC_TOKENS.GetBoughtTogether, { useClass: GetBoughtTogetherUseCase });
+  container.register(UC_TOKENS.GetBatchRecommendations, { useClass: GetBatchRecommendationsUseCase });
+  container.register(UC_TOKENS.GetPersonalized, { useClass: GetPersonalizedUseCase });
+  container.register(UC_TOKENS.GetPopular, { useClass: GetPopularUseCase });
+  container.register(UC_TOKENS.GetLatestReleases, { useClass: GetLatestReleasesUseCase });
+  container.register(UC_TOKENS.GetPreOrders, { useClass: GetPreOrdersUseCase });
+
+  // Search use cases
+  container.register(UC_TOKENS.Search, { useClass: SearchUseCase });
+  container.register(UC_TOKENS.MerchandisedSearch, { useClass: MerchandisedSearchUseCase });
+
+  // Security use cases
+  container.register(UC_TOKENS.GetHold, { useClass: GetHoldUseCase });
+  container.register(UC_TOKENS.GetHoldStatus, { useClass: GetHoldStatusUseCase });
+  container.register(UC_TOKENS.UploadDocument, { useClass: UploadDocumentUseCase });
+  container.register(UC_TOKENS.SubmitHoldResponse, { useClass: SubmitResponseUseCase });
+  container.register(UC_TOKENS.UnlockAccount, { useClass: UnlockAccountUseCase });
+
+  // Card challenge use cases
+  container.register(UC_TOKENS.StartChallenge, { useClass: StartChallengeUseCase });
+  container.register(UC_TOKENS.VerifyChallenge, { useClass: VerifyChallengeUseCase });
+  container.register(UC_TOKENS.ChooseId, { useClass: ChooseIdUseCase });
+
+  // Price match use cases
+  container.register(UC_TOKENS.SubmitClaim, { useClass: SubmitClaimUseCase });
+  container.register(UC_TOKENS.GetUserClaims, { useClass: GetUserClaimsUseCase });
+  container.register(UC_TOKENS.GetPriceMatchConfig, { useClass: GetConfigUseCase });
+  container.register(UC_TOKENS.GetClaimPromoCode, { useClass: GetClaimPromoCodeUseCase });
+
+  // Products — pricing (additional)
+  container.register(UC_TOKENS.ConvertCartPrices, { useClass: ConvertCartPricesUseCase });
+
+  // Orders (additional)
+  container.register(UC_TOKENS.LogAccessAttempt, { useClass: LogAccessAttemptUseCase });
 
   return mocks;
 }
