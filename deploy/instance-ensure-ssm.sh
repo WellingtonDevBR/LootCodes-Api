@@ -10,7 +10,7 @@ if [[ "$(id -u)" -ne 0 ]]; then
   exit 1
 fi
 
-dnf install -y amazon-ssm-agent curl ca-certificates
+dnf install -y amazon-ssm-agent
 
 TOKEN=$(curl -fsS -X PUT "http://169.254.169.254/latest/api/token" \
   -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")

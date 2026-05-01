@@ -8,8 +8,8 @@ TOKEN=$(curl -fsS --retry 8 --retry-delay 2 --retry-all-errors -X PUT "http://16
 REGION=$(curl -fsS -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/placement/region)
 export AWS_DEFAULT_REGION="$REGION"
 
-# SSM agent first: install, start, then briefly wait for outbound 443 to regional SSM before heavy dnf work.
-dnf install -y amazon-ssm-agent curl ca-certificates || true
+# SSM agent first: AL2023 ships curl-minimal — do not install full "curl" (dnf conflict). Only install the agent.
+dnf install -y amazon-ssm-agent || true
 systemctl enable amazon-ssm-agent || true
 systemctl start amazon-ssm-agent || true
 for _ in $(seq 1 45); do
