@@ -11,9 +11,26 @@ if [[ "$(id -u)" -ne 0 ]]; then
   exit 1
 fi
 
+install_compose_plugin_binary() {
+  local ver="${DOCKER_COMPOSE_VERSION:-2.24.7}"
+  local arch carch
+  arch=$(uname -m)
+  case "$arch" in
+    x86_64) carch=x86_64 ;;
+    aarch64) carch=aarch64 ;;
+    *) echo "Unsupported arch: $arch" >&2; return 1 ;;
+  esac
+  mkdir -p /usr/local/lib/docker/cli-plugins
+  curl -fsSL "https://github.com/docker/compose/releases/download/v${ver}/docker-compose-linux-${carch}" \
+    -o /usr/local/lib/docker/cli-plugins/docker-compose
+  chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+}
+
 install_al2023() {
-  dnf install -y docker
-  dnf install -y docker-compose-plugin || true
+  dnf install -y docker awscli
+  if ! dnf install -y docker-compose-plugin; then
+    install_compose_plugin_binary
+  fi
   systemctl enable --now docker
 }
 

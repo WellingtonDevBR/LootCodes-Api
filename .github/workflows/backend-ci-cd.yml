@@ -56,14 +56,62 @@ jobs:
     needs: [ci]
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
+    # Ensure this job can mint an OIDC token (some org/repos need this on the job, not only workflow).
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
+
+      - name: Verify AWS_ROLE_ARN secret
+        env:
+          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+        run: |
+          if [ -z "$AWS_ROLE_ARN" ]; then
+            echo "::error::Repository secret AWS_ROLE_ARN is missing or empty."
+            echo "Add it under Settings → Secrets and variables → Actions → Secrets (not Variables)."
+            echo "Value: arn:aws:iam::YOUR_ACCOUNT_ID:role/YOUR_OIDC_ROLE_NAME"
+            exit 1
+          fi
+          case "$AWS_ROLE_ARN" in
+            arn:aws:iam::*:role/*) ;;
+            *)
+              echo "::error::AWS_ROLE_ARN must look like arn:aws:iam::123456789012:role/RoleName"
+              exit 1
+              ;;
+          esac
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify EC2 targets are SSM Online
+        env:
+          INSTANCE_IDS: ${{ vars.EC2_INSTANCE_IDS }}
+        run: |
+          if [ -z "$INSTANCE_IDS" ]; then
+            echo "Set GitHub variable EC2_INSTANCE_IDS (comma or space separated)."
+            exit 1
+          fi
+          FAIL=0
+          for id in $(echo "$INSTANCE_IDS" | tr ',' ' '); do
+            id=$(echo "$id" | xargs)
+            [ -z "$id" ] && continue
+            ping=$(aws ssm describe-instance-information \
+              --region "$AWS_REGION" \
+              --filters "Key=InstanceIds,Values=$id" \
+              --query 'InstanceInformationList[0].PingStatus' \
+              --output text 2>/dev/null || true)
+            if [ "$ping" = "Online" ]; then
+              echo "OK: $id PingStatus=Online"
+            else
+              echo "::error::SSM: $id is not Online (status: ${ping:-not registered}). Attach AmazonSSMManagedInstanceCore to the instance profile, ensure the instance is running, allow SSM out (NAT or VPC endpoints), and match EC2_INSTANCE_IDS to the live instance. The deploy role needs ssm:DescribeInstanceInformation (see deploy/github-actions-deploy-role-policy.example.json)."
+              FAIL=1
+            fi
+          done
+          exit "$FAIL"
 
       - name: Login to Amazon ECR
         id: ecr

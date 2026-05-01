@@ -33,6 +33,7 @@
       "Sid": "SsmRead",
       "Effect": "Allow",
       "Action": [
+        "ssm:DescribeInstanceInformation",
         "ssm:GetCommandInvocation",
         "ssm:ListCommandInvocations"
       ],
