@@ -12,6 +12,6 @@ services:
     image: ${API_IMAGE_URI:?Set API_IMAGE_URI to the full ECR image URI}
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3000:3001"
     env_file:
       - .env
