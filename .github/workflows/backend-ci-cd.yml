@@ -91,6 +91,8 @@ jobs:
         env:
           INSTANCE_IDS: ${{ vars.EC2_INSTANCE_IDS }}
         run: |
+          # Re-running an old workflow run in GitHub uses the workflow file from THAT commit only. To use the latest YAML, push to main or "Run workflow" on the default branch instead of "Re-run jobs".
+          echo "::notice::verify-ec2-ssm v3 (get-caller-identity + stderr from describe-instances)"
           if [ -z "$INSTANCE_IDS" ]; then
             echo "Set GitHub variable EC2_INSTANCE_IDS (comma or space separated)."
             exit 1
