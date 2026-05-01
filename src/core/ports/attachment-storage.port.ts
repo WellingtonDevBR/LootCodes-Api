@@ -1,0 +1,4 @@
+export interface IAttachmentStorage {
+  upload(ticketId: string, fileBuffer: Buffer, fileName: string, mimeType: string): Promise<string>;
+  getSignedUrl(path: string): Promise<string>;
+}
