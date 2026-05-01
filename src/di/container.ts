@@ -124,6 +124,7 @@ import { GetKeysForOrderUseCase } from '../core/use-cases/key-delivery/get-keys-
 import { GetKeysForOrderItemUseCase } from '../core/use-cases/key-delivery/get-keys-for-order-item.use-case.js';
 import { RevealKeyUseCase } from '../core/use-cases/key-delivery/reveal-key.use-case.js';
 import { CheckKeyViewedUseCase } from '../core/use-cases/key-delivery/check-key-viewed.use-case.js';
+import { VerifyPaymentForAccessUseCase } from '../core/use-cases/key-delivery/verify-payment-for-access.use-case.js';
 
 // --- Checkout use cases ---
 import { InitializeCheckoutUseCase } from '../core/use-cases/checkout/initialize-checkout.use-case.js';
@@ -419,6 +420,7 @@ container.register(UC_TOKENS.GetKeysForOrder, { useClass: GetKeysForOrderUseCase
 container.register(UC_TOKENS.GetKeysForOrderItem, { useClass: GetKeysForOrderItemUseCase });
 container.register(UC_TOKENS.RevealKey, { useClass: RevealKeyUseCase });
 container.register(UC_TOKENS.CheckKeyViewed, { useClass: CheckKeyViewedUseCase });
+container.register(UC_TOKENS.VerifyPaymentForAccess, { useClass: VerifyPaymentForAccessUseCase });
 
 // --- Checkout Use Cases ---
 container.register(UC_TOKENS.InitializeCheckout, { useClass: InitializeCheckoutUseCase });

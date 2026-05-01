@@ -126,6 +126,7 @@ export const UC_TOKENS = {
   GetKeysForOrderItem: Symbol.for('GetKeysForOrderItemUseCase'),
   RevealKey: Symbol.for('RevealKeyUseCase'),
   CheckKeyViewed: Symbol.for('CheckKeyViewedUseCase'),
+  VerifyPaymentForAccess: Symbol.for('VerifyPaymentForAccessUseCase'),
 
   // Support use cases
   CreateTicket: Symbol.for('CreateTicketUseCase'),

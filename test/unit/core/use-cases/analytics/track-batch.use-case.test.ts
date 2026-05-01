@@ -11,6 +11,7 @@ describe('TrackBatchUseCase', () => {
     updateSessionOutcome: ReturnType<typeof vi.fn>;
     trackProductViewDuration: ReturnType<typeof vi.fn>;
     trackSearchEvent: ReturnType<typeof vi.fn>;
+    upsertSession: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
@@ -18,18 +19,19 @@ describe('TrackBatchUseCase', () => {
       insertPageViews: vi.fn().mockResolvedValue(undefined),
       insertActivityEvents: vi.fn().mockResolvedValue(undefined),
       insertCartEvent: vi.fn(),
-      updateSessionOutcome: vi.fn(),
-      trackProductViewDuration: vi.fn(),
-      trackSearchEvent: vi.fn(),
+      updateSessionOutcome: vi.fn().mockResolvedValue(undefined),
+      trackProductViewDuration: vi.fn().mockResolvedValue(undefined),
+      trackSearchEvent: vi.fn().mockResolvedValue(undefined),
+      upsertSession: vi.fn().mockResolvedValue(undefined),
     };
     useCase = new TrackBatchUseCase(analyticsRepo as unknown as IAnalyticsRepository);
   });
 
   it('should split events into page views and activity events', async () => {
     const events = [
-      { session_id: 's1', path: '/home', referrer: '' },
-      { session_id: 's1', event_type: 'click', element_id: 'btn-1' },
-      { session_id: 's1', path: '/products' },
+      { action: 'page-view', payload: { path: '/home', referrer: '' } },
+      { action: 'activity-event', payload: { event_type: 'click', element_id: 'btn-1' } },
+      { action: 'page-view', payload: { path: '/products' } },
     ];
 
     await useCase.execute({ events }, 'session-1', 'user-1');
@@ -48,7 +50,7 @@ describe('TrackBatchUseCase', () => {
 
   it('should skip insertPageViews when no page views present', async () => {
     const events = [
-      { session_id: 's1', event_type: 'scroll' },
+      { action: 'activity-event', payload: { event_type: 'scroll' } },
     ];
 
     await useCase.execute({ events }, 'session-1');
@@ -59,7 +61,7 @@ describe('TrackBatchUseCase', () => {
 
   it('should skip insertActivityEvents when no activity events present', async () => {
     const events = [
-      { session_id: 's1', path: '/home' },
+      { action: 'page-view', payload: { path: '/home' } },
     ];
 
     await useCase.execute({ events }, 'session-1');
@@ -75,9 +77,9 @@ describe('TrackBatchUseCase', () => {
     expect(analyticsRepo.insertActivityEvents).not.toHaveBeenCalled();
   });
 
-  it('should preserve original user_id when no userId param provided', async () => {
+  it('should preserve payload user_id when no userId param provided', async () => {
     const events = [
-      { session_id: 's1', user_id: 'event-user', path: '/home' },
+      { action: 'page-view', payload: { user_id: 'event-user', path: '/home' } },
     ];
 
     await useCase.execute({ events }, 'session-1');
@@ -86,9 +88,9 @@ describe('TrackBatchUseCase', () => {
     expect(pageViews[0].user_id).toBe('event-user');
   });
 
-  it('should override event user_id when userId param is provided', async () => {
+  it('should override payload user_id when userId param is provided', async () => {
     const events = [
-      { session_id: 's1', user_id: 'event-user', path: '/home' },
+      { action: 'page-view', payload: { user_id: 'event-user', path: '/home' } },
     ];
 
     await useCase.execute({ events }, 'session-1', 'override-user');

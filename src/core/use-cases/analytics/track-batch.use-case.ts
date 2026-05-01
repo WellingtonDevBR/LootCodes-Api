@@ -1,10 +1,21 @@
 import { injectable, inject } from 'tsyringe';
 import { TOKENS } from '../../../di/tokens.js';
 import type { IAnalyticsRepository } from '../../ports/analytics-repository.port.js';
-import type { BatchEventsDto, PageViewEvent, ActivityEvent } from './analytics.types.js';
+import type {
+  BatchEventsDto,
+  BatchedEventEnvelope,
+  PageViewEvent,
+  ActivityEvent,
+  SessionOutcomeDto,
+  ProductViewDurationDto,
+  SearchEventDto,
+  SessionUpsertDto,
+} from './analytics.types.js';
 import { createLogger } from '../../../shared/logger.js';
 
 const logger = createLogger('track-batch');
+
+const MAX_BATCH_SIZE = 200;
 
 @injectable()
 export class TrackBatchUseCase {
@@ -12,17 +23,112 @@ export class TrackBatchUseCase {
     @inject(TOKENS.AnalyticsRepository) private analyticsRepo: IAnalyticsRepository,
   ) {}
 
-  async execute(dto: BatchEventsDto, sessionId: string, userId?: string): Promise<void> {
+  /**
+   * Processes a batch of analytics events using the client's envelope format:
+   * each event has { action: string, payload: Record<string, unknown> }.
+   * Dispatches to the appropriate repository method based on the action field.
+   */
+  async execute(dto: BatchEventsDto, sessionId: string, userId?: string): Promise<number> {
+    const events = dto.events.slice(0, MAX_BATCH_SIZE);
     const pageViews: PageViewEvent[] = [];
     const activityEvents: ActivityEvent[] = [];
 
-    for (const event of dto.events) {
-      const enriched = { ...event, session_id: sessionId, user_id: userId ?? event.user_id };
+    let processed = 0;
 
-      if ('path' in event) {
-        pageViews.push(enriched as PageViewEvent);
-      } else if ('event_type' in event) {
-        activityEvents.push(enriched as ActivityEvent);
+    for (const evt of events) {
+      if (!evt.action || typeof evt.action !== 'string') continue;
+      const payload = evt.payload ?? {};
+
+      const resolvedUserId = userId ?? (payload.user_id as string | undefined);
+      const resolvedSessionId = (payload.session_id as string) ?? sessionId;
+
+      switch (evt.action) {
+        case 'page-view':
+          pageViews.push({
+            session_id: resolvedSessionId,
+            user_id: resolvedUserId,
+            path: payload.path as string ?? '',
+            referrer: payload.referrer as string | undefined,
+            timestamp: payload.timestamp as string | undefined,
+          });
+          processed++;
+          break;
+
+        case 'activity-event':
+          activityEvents.push({
+            session_id: resolvedSessionId,
+            user_id: resolvedUserId,
+            event_type: payload.event_type as string ?? '',
+            element_id: payload.element_id as string | undefined,
+            metadata: payload.metadata as Record<string, unknown> | undefined,
+            timestamp: payload.timestamp as string | undefined,
+          });
+          processed++;
+          break;
+
+        case 'product-view':
+          pageViews.push({
+            session_id: resolvedSessionId,
+            user_id: resolvedUserId,
+            path: payload.path as string ?? `/p/${payload.product_id ?? ''}`,
+            referrer: payload.referrer as string | undefined,
+            timestamp: payload.timestamp as string | undefined,
+          });
+          processed++;
+          break;
+
+        case 'product-view-duration':
+          await this.analyticsRepo.trackProductViewDuration({
+            session_id: resolvedSessionId,
+            product_id: payload.product_id as string ?? '',
+            variant_id: payload.variant_id as string | undefined,
+            duration_seconds: Number(payload.duration_seconds) || 0,
+            user_id: resolvedUserId,
+          });
+          processed++;
+          break;
+
+        case 'session-outcome':
+          await this.analyticsRepo.updateSessionOutcome({
+            session_id: resolvedSessionId,
+            outcome: payload.outcome as string ?? '',
+            conversion_value: payload.conversion_value as number | undefined,
+          } as SessionOutcomeDto);
+          processed++;
+          break;
+
+        case 'session-upsert':
+          await this.analyticsRepo.upsertSession({
+            session_id: resolvedSessionId,
+            user_id: resolvedUserId,
+            page_path: payload.page_path as string | undefined,
+            referrer: payload.referrer as string | undefined,
+            traffic_source: payload.traffic_source as string | undefined,
+            utm_source: payload.utm_source as string | undefined,
+            utm_medium: payload.utm_medium as string | undefined,
+            utm_campaign: payload.utm_campaign as string | undefined,
+            device_type: payload.device_type as string | undefined,
+            browser: payload.browser as string | undefined,
+            os: payload.os as string | undefined,
+            screen_resolution: payload.screen_resolution as string | undefined,
+            language: payload.language as string | undefined,
+            country_code: payload.country_code as string | undefined,
+          } as SessionUpsertDto);
+          processed++;
+          break;
+
+        case 'search':
+          await this.analyticsRepo.trackSearchEvent({
+            session_id: resolvedSessionId,
+            query: payload.query as string ?? '',
+            results_count: Number(payload.results_count) || 0,
+            filters: payload.filters as Record<string, unknown> | undefined,
+          } as SearchEventDto);
+          processed++;
+          break;
+
+        default:
+          break;
       }
     }
 
@@ -33,6 +139,7 @@ export class TrackBatchUseCase {
       await this.analyticsRepo.insertActivityEvents(activityEvents);
     }
 
-    logger.debug('Batch tracked', { sessionId, pageViews: pageViews.length, activityEvents: activityEvents.length });
+    logger.debug('Batch tracked', { sessionId, processed, total: events.length });
+    return processed;
   }
 }

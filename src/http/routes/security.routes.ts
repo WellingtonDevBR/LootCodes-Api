@@ -9,7 +9,6 @@ import type { UnlockAccountUseCase } from '../../core/use-cases/security/unlock-
 import type { SubmitHoldResponseDto } from '../../core/use-cases/security/security.types.js';
 import {
   holdIdParamsSchema,
-  uploadDocumentBodySchema,
   submitResponseBodySchema,
   unlockAccountBodySchema,
 } from '../schemas/security.schema.js';
@@ -35,16 +34,32 @@ export async function securityRoutes(app: FastifyInstance) {
     },
   );
 
-  app.post<{ Params: { id: string }; Body: { path: string; content_type: string } }>(
+  app.post<{ Params: { id: string } }>(
     '/holds/:id/upload',
-    { schema: { params: holdIdParamsSchema, body: uploadDocumentBodySchema } },
+    { schema: { params: holdIdParamsSchema } },
     async (request, reply) => {
       const uc = container.resolve<UploadDocumentUseCase>(UC_TOKENS.UploadDocument);
+
+      const data = await request.file();
+      if (!data) {
+        return reply.code(400).send({ error: 'No file uploaded' });
+      }
+
+      const allowedMimes = [
+        'image/jpeg', 'image/png', 'image/webp',
+        'application/pdf',
+      ];
+      if (!allowedMimes.includes(data.mimetype)) {
+        return reply.code(400).send({ error: 'Invalid file type' });
+      }
+
+      const fileBuffer = await data.toBuffer();
+      const storagePath = `holds/${request.params.id}/${data.filename}`;
       const url = await uc.execute(
         request.params.id,
-        request.body.path,
-        Buffer.alloc(0),
-        request.body.content_type,
+        storagePath,
+        fileBuffer,
+        data.mimetype,
       );
       return reply.send({ url });
     },

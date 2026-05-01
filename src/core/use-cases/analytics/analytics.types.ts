@@ -40,8 +40,30 @@ export interface GeoLookupResult {
   risk_score?: number;
 }
 
+export interface BatchedEventEnvelope {
+  action: string;
+  payload: Record<string, unknown>;
+}
+
 export interface BatchEventsDto {
-  events: Array<PageViewEvent | ActivityEvent>;
+  events: Array<BatchedEventEnvelope>;
+}
+
+export interface SessionUpsertDto {
+  session_id: string;
+  user_id?: string;
+  page_path?: string;
+  referrer?: string;
+  traffic_source?: string;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  device_type?: string;
+  browser?: string;
+  os?: string;
+  screen_resolution?: string;
+  language?: string;
+  country_code?: string;
 }
 
 export interface ProductViewDurationDto {

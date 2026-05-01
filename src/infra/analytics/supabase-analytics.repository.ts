@@ -2,7 +2,7 @@ import { injectable, inject } from 'tsyringe';
 import { TOKENS } from '../../di/tokens.js';
 import type { IDatabase } from '../../core/ports/database.port.js';
 import type { IAnalyticsRepository } from '../../core/ports/analytics-repository.port.js';
-import type { PageViewEvent, ActivityEvent, CartEvent, SessionOutcomeDto, ProductViewDurationDto, SearchEventDto } from '../../core/use-cases/analytics/analytics.types.js';
+import type { PageViewEvent, ActivityEvent, CartEvent, SessionOutcomeDto, ProductViewDurationDto, SearchEventDto, SessionUpsertDto } from '../../core/use-cases/analytics/analytics.types.js';
 import { createLogger } from '../../shared/logger.js';
 
 const logger = createLogger('supabase-analytics-repository');
@@ -75,5 +75,25 @@ export class SupabaseAnalyticsRepository implements IAnalyticsRepository {
       filters: data.filters,
     });
     logger.debug('Search event inserted', { query: data.query });
+  }
+
+  async upsertSession(dto: SessionUpsertDto): Promise<void> {
+    await this.db.rpc('upsert_user_session', {
+      p_session_id: dto.session_id,
+      p_user_id: dto.user_id ?? null,
+      p_page_path: dto.page_path ?? null,
+      p_referrer: dto.referrer ?? null,
+      p_traffic_source: dto.traffic_source ?? null,
+      p_utm_source: dto.utm_source ?? null,
+      p_utm_medium: dto.utm_medium ?? null,
+      p_utm_campaign: dto.utm_campaign ?? null,
+      p_device_type: dto.device_type ?? null,
+      p_browser: dto.browser ?? null,
+      p_os: dto.os ?? null,
+      p_screen_resolution: dto.screen_resolution ?? null,
+      p_language: dto.language ?? null,
+      p_country_code: dto.country_code ?? null,
+    });
+    logger.debug('Session upserted', { sessionId: dto.session_id });
   }
 }

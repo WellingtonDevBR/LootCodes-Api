@@ -12,6 +12,7 @@ import type { GetKeysForOrderUseCase } from '../../core/use-cases/key-delivery/g
 import type { GetKeysForOrderItemUseCase } from '../../core/use-cases/key-delivery/get-keys-for-order-item.use-case.js';
 import type { RevealKeyUseCase } from '../../core/use-cases/key-delivery/reveal-key.use-case.js';
 import type { CheckKeyViewedUseCase } from '../../core/use-cases/key-delivery/check-key-viewed.use-case.js';
+import type { VerifyPaymentForAccessUseCase } from '../../core/use-cases/key-delivery/verify-payment-for-access.use-case.js';
 import { authGuard } from '../middleware/auth.guard.js';
 import { buildRequestContext } from '../middleware/request-context.js';
 import {
@@ -202,23 +203,51 @@ export async function orderRoutes(app: FastifyInstance) {
   app.post<{ Params: { keyId: string }; Body: { order_id: string; access_token?: string } }>(
     '/keys/:keyId/log-view',
     {
-      preHandler: [authGuard],
       schema: { params: keyIdParamsSchema, body: logKeyViewBodySchema },
     },
     async (request, reply) => {
       const uc = container.resolve<RevealKeyUseCase>(UC_TOKENS.RevealKey);
-      const user = getAuthUser(request);
+      const user = (request as unknown as { authUser?: AuthUser }).authUser;
       const reqCtx = buildRequestContext(request);
 
       await uc.execute(
         request.params.keyId,
         request.body.order_id,
-        user.id,
+        user?.id ?? 'guest',
         reqCtx.clientIP,
         reqCtx.userAgent ?? 'unknown',
       );
 
       return reply.send({ success: true });
+    },
+  );
+
+  app.post<{ Body: { order_id: string; access_token?: string; email?: string } }>(
+    '/keys/verify-payment',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['order_id'],
+          properties: {
+            order_id: { type: 'string', format: 'uuid' },
+            access_token: { type: 'string' },
+            email: { type: 'string', format: 'email' },
+          },
+          additionalProperties: false,
+        },
+      },
+    },
+    async (request, reply) => {
+      const user = (request as unknown as { authUser?: AuthUser }).authUser;
+      const uc = container.resolve<VerifyPaymentForAccessUseCase>(UC_TOKENS.VerifyPaymentForAccess);
+      const result = await uc.execute({
+        order_id: request.body.order_id,
+        access_token: request.body.access_token,
+        email: request.body.email,
+        user_id: user?.id,
+      });
+      return reply.send(result);
     },
   );
 

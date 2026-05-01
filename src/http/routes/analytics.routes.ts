@@ -6,7 +6,9 @@ import type { TrackCartEventUseCase } from '../../core/use-cases/analytics/track
 import type { UpdateSessionOutcomeUseCase } from '../../core/use-cases/analytics/update-session-outcome.use-case.js';
 import type { TrackProductViewDurationUseCase } from '../../core/use-cases/analytics/track-product-view-duration.use-case.js';
 import type { TrackSearchEventUseCase } from '../../core/use-cases/analytics/track-search-event.use-case.js';
-import type { CartEvent, SessionOutcomeDto, ProductViewDurationDto, SearchEventDto } from '../../core/use-cases/analytics/analytics.types.js';
+import type { GeolocateUseCase } from '../../core/use-cases/analytics/geolocate.use-case.js';
+import type { CartEvent, SessionOutcomeDto, ProductViewDurationDto, SearchEventDto, BatchedEventEnvelope } from '../../core/use-cases/analytics/analytics.types.js';
+import { buildRequestContext } from '../middleware/request-context.js';
 import {
   batchEventsBodySchema,
   cartEventBodySchema,
@@ -18,15 +20,15 @@ interface OptionalAuthRequest {
 }
 
 export async function analyticsRoutes(app: FastifyInstance) {
-  app.post<{ Body: { session_id: string; events: unknown[] } }>(
+  app.post<{ Body: { session_id: string; events: BatchedEventEnvelope[] } }>(
     '/batch',
     { schema: { body: batchEventsBodySchema } },
     async (request, reply) => {
       const { authUser } = request as unknown as OptionalAuthRequest;
       const { session_id, events } = request.body;
       const uc = container.resolve<TrackBatchUseCase>(UC_TOKENS.TrackBatch);
-      await uc.execute({ events: events as never[] }, session_id, authUser?.id);
-      return reply.code(204).send();
+      const processed = await uc.execute({ events }, session_id, authUser?.id);
+      return reply.send({ success: true, processed });
     },
   );
 
@@ -96,6 +98,16 @@ export async function analyticsRoutes(app: FastifyInstance) {
       const uc = container.resolve<TrackSearchEventUseCase>(UC_TOKENS.TrackSearchEvent);
       await uc.execute(request.body);
       return reply.code(204).send();
+    },
+  );
+
+  app.post(
+    '/geolocation',
+    async (request, reply) => {
+      const reqCtx = buildRequestContext(request);
+      const uc = container.resolve<GeolocateUseCase>(UC_TOKENS.Geolocate);
+      const result = await uc.execute(reqCtx.clientIP);
+      return reply.send(result);
     },
   );
 }

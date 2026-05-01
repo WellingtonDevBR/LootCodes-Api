@@ -1,4 +1,4 @@
-import type { PageViewEvent, ActivityEvent, CartEvent, SessionOutcomeDto, ProductViewDurationDto, SearchEventDto } from '../use-cases/analytics/analytics.types.js';
+import type { PageViewEvent, ActivityEvent, CartEvent, SessionOutcomeDto, ProductViewDurationDto, SearchEventDto, SessionUpsertDto } from '../use-cases/analytics/analytics.types.js';
 
 export interface IAnalyticsRepository {
   insertPageViews(events: PageViewEvent[]): Promise<void>;
@@ -7,4 +7,5 @@ export interface IAnalyticsRepository {
   updateSessionOutcome(dto: SessionOutcomeDto): Promise<void>;
   trackProductViewDuration(data: ProductViewDurationDto & { user_id?: string }): Promise<void>;
   trackSearchEvent(data: SearchEventDto): Promise<void>;
+  upsertSession(dto: SessionUpsertDto): Promise<void>;
 }
