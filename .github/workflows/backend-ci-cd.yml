@@ -141,7 +141,7 @@ jobs:
             if [ "$ping" = "Online" ]; then
               echo "OK: $id running, SSM PingStatus=Online"
             else
-              echo "::error::SSM: $id is not registered or not Online (status: ${ping:-not registered}). On the instance run: sudo systemctl enable --now amazon-ssm-agent && sudo systemctl restart amazon-ssm-agent. Confirm IAM: AmazonSSMManagedInstanceCore on the instance profile. If the instance was launched before SSM policy or user-data fixes, run deploy/bootstrap-ec2.sh or replace the instance (terraform apply). See deploy/terraform/user_data.tpl."
+              echo "::error::SSM: $id is not registered or not Online (status: ${ping:-not registered}). Fix: from your laptop, scp deploy/instance-ensure-ssm.sh to the host and run sudo bash instance-ensure-ssm.sh, or replace the instance (cd deploy/terraform && terraform apply -replace='aws_instance.api'). IAM on the instance profile must include AmazonSSMManagedInstanceCore."
               FAIL=1
             fi
           done
