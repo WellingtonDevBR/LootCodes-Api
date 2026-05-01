@@ -20,8 +20,10 @@ function deriveChannel(requestedBy: string | undefined): ClientChannel {
 
 export function buildRequestContext(request: FastifyRequest, body?: Record<string, unknown>): RequestContext {
   const headers = request.headers as Record<string, string | string[] | undefined>;
+  const requestId = (request as unknown as Record<string, unknown>).requestId as string
+    ?? crypto.randomUUID();
   return {
-    requestId: crypto.randomUUID(),
+    requestId,
     clientIP: extractClientIP(headers),
     sessionId: typeof body?.session_id === 'string' ? body.session_id : undefined,
     userAgent: request.headers['user-agent'] ?? undefined,

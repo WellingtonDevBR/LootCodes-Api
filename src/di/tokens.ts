@@ -283,4 +283,9 @@ export const UC_TOKENS = {
   // Search use cases
   Search: Symbol.for('SearchUseCase'),
   MerchandisedSearch: Symbol.for('MerchandisedSearchUseCase'),
+
+  // Additional use cases (architecture cleanup)
+  ExchangeGuestSession: Symbol.for('ExchangeGuestSessionUseCase'),
+  ConvertCartPrices: Symbol.for('ConvertCartPricesUseCase'),
+  LogAccessAttempt: Symbol.for('LogAccessAttemptUseCase'),
 } as const;

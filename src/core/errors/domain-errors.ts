@@ -54,3 +54,30 @@ export class SecurityVerificationError extends DomainError {
     super(message, 403, code);
   }
 }
+
+export class PaymentError extends DomainError {
+  constructor(message = 'Payment failed', code = 'PAYMENT_ERROR') {
+    super(message, 402, code);
+  }
+}
+
+export class ConflictError extends DomainError {
+  constructor(message = 'Resource conflict', code = 'CONFLICT') {
+    super(message, 409, code);
+  }
+}
+
+export class GoneError extends DomainError {
+  constructor(message = 'Resource no longer available', code = 'GONE') {
+    super(message, 410, code);
+  }
+}
+
+export class ServiceUnavailableError extends DomainError {
+  public readonly retryAfterSeconds?: number;
+
+  constructor(message = 'Service temporarily unavailable', retryAfterSeconds?: number) {
+    super(message, 503, 'SERVICE_UNAVAILABLE');
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}

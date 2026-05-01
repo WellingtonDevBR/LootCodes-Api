@@ -54,7 +54,7 @@ import { SupabaseStockNotificationRepository } from '../infra/products/supabase-
 
 // Analytics adapters
 import { SupabaseAnalyticsRepository } from '../infra/analytics/supabase-analytics.repository.js';
-import { StubGeoServiceAdapter } from '../infra/analytics/stub-geo-service.adapter.js';
+import { SupabaseGeoServiceAdapter } from '../infra/analytics/supabase-geo-service.adapter.js';
 
 // Wallet adapters
 import { SupabaseWalletRepository } from '../infra/wallet/supabase-wallet.repository.js';
@@ -77,12 +77,12 @@ import { StubMicroAuthAdapter } from '../infra/card-challenge/stub-micro-auth.ad
 import { SupabasePriceMatchRepository } from '../infra/price-match/supabase-price-match.repository.js';
 
 // Payment adapters (verification, capture, webhooks)
-import { StubPaymentVerifierAdapter } from '../infra/payments/stub-payment-verifier.adapter.js';
-import { StubRiskAssessorAdapter } from '../infra/payments/stub-risk-assessor.adapter.js';
-import { StubFulfillmentAdapter } from '../infra/payments/stub-fulfillment.adapter.js';
-import { StubPaymentCapturerAdapter } from '../infra/payments/stub-payment-capturer.adapter.js';
-import { StubWebhookVerifierAdapter } from '../infra/payments/stub-webhook-verifier.adapter.js';
-import { StubWebhookHandlerAdapter } from '../infra/payments/stub-webhook-handler.adapter.js';
+import { StripePaymentVerifierAdapter } from '../infra/payments/stripe-payment-verifier.adapter.js';
+import { SupabaseRiskAssessorAdapter } from '../infra/payments/supabase-risk-assessor.adapter.js';
+import { SupabaseFulfillmentAdapter } from '../infra/payments/supabase-fulfillment.adapter.js';
+import { StripePaymentCapturerAdapter } from '../infra/payments/stripe-payment-capturer.adapter.js';
+import { StripeWebhookVerifierAdapter } from '../infra/payments/stripe-webhook-verifier.adapter.js';
+import { SupabaseWebhookHandlerAdapter } from '../infra/payments/supabase-webhook-handler.adapter.js';
 
 // Recommendation adapters
 import { SupabaseRecommendationRepository } from '../infra/products/supabase-recommendation.repository.js';
@@ -279,6 +279,11 @@ import { GetPreOrdersUseCase } from '../core/use-cases/recommendations/get-pre-o
 import { SearchUseCase } from '../core/use-cases/search/search.use-case.js';
 import { MerchandisedSearchUseCase } from '../core/use-cases/search/merchandised-search.use-case.js';
 
+// --- Additional use cases (architecture cleanup) ---
+import { ExchangeGuestSessionUseCase } from '../core/use-cases/guest/exchange-guest-session.use-case.js';
+import { ConvertCartPricesUseCase } from '../core/use-cases/products/pricing/convert-cart-prices.use-case.js';
+import { LogAccessAttemptUseCase } from '../core/use-cases/orders/log-access-attempt.use-case.js';
+
 // ============================================================
 // Infrastructure adapter registrations
 // ============================================================
@@ -335,7 +340,7 @@ container.register(TOKENS.StockNotificationRepository, { useClass: SupabaseStock
 
 // --- Analytics ---
 container.register(TOKENS.AnalyticsRepository, { useClass: SupabaseAnalyticsRepository });
-container.register(TOKENS.GeoService, { useClass: StubGeoServiceAdapter });
+container.register(TOKENS.GeoService, { useClass: SupabaseGeoServiceAdapter });
 
 // --- Wallet ---
 container.register(TOKENS.WalletRepository, { useClass: SupabaseWalletRepository });
@@ -358,14 +363,14 @@ container.register(TOKENS.MicroAuthProvider, { useClass: StubMicroAuthAdapter })
 container.register(TOKENS.PriceMatchRepository, { useClass: SupabasePriceMatchRepository });
 
 // --- Payment Verification + Capture ---
-container.register(TOKENS.PaymentVerifier, { useClass: StubPaymentVerifierAdapter });
-container.register(TOKENS.RiskAssessor, { useClass: StubRiskAssessorAdapter });
-container.register(TOKENS.FulfillmentService, { useClass: StubFulfillmentAdapter });
-container.register(TOKENS.PaymentCapturer, { useClass: StubPaymentCapturerAdapter });
+container.register(TOKENS.PaymentVerifier, { useClass: StripePaymentVerifierAdapter });
+container.register(TOKENS.RiskAssessor, { useClass: SupabaseRiskAssessorAdapter });
+container.register(TOKENS.FulfillmentService, { useClass: SupabaseFulfillmentAdapter });
+container.register(TOKENS.PaymentCapturer, { useClass: StripePaymentCapturerAdapter });
 
 // --- Webhooks ---
-container.register(TOKENS.WebhookVerifier, { useClass: StubWebhookVerifierAdapter });
-container.register(TOKENS.WebhookHandler, { useClass: StubWebhookHandlerAdapter });
+container.register(TOKENS.WebhookVerifier, { useClass: StripeWebhookVerifierAdapter });
+container.register(TOKENS.WebhookHandler, { useClass: SupabaseWebhookHandlerAdapter });
 
 // --- Recommendations ---
 container.register(TOKENS.RecommendationRepository, { useClass: SupabaseRecommendationRepository });
@@ -565,5 +570,10 @@ container.register(UC_TOKENS.GetPreOrders, { useClass: GetPreOrdersUseCase });
 // --- Search Use Cases ---
 container.register(UC_TOKENS.Search, { useClass: SearchUseCase });
 container.register(UC_TOKENS.MerchandisedSearch, { useClass: MerchandisedSearchUseCase });
+
+// --- Additional Use Cases ---
+container.register(UC_TOKENS.ExchangeGuestSession, { useClass: ExchangeGuestSessionUseCase });
+container.register(UC_TOKENS.ConvertCartPrices, { useClass: ConvertCartPricesUseCase });
+container.register(UC_TOKENS.LogAccessAttempt, { useClass: LogAccessAttemptUseCase });
 
 export { container };

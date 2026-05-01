@@ -5,6 +5,7 @@ import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import multipart from '@fastify/multipart';
 import sensible from '@fastify/sensible';
+import crypto from 'node:crypto';
 import { loadEnv } from './config/env.js';
 import { buildCorsOrigins, corsOriginValidator } from './config/cors.js';
 import { errorHandler } from './http/middleware/error-handler.js';
@@ -72,6 +73,15 @@ export async function buildApp(): Promise<FastifyInstance> {
   });
 
   await app.register(sensible);
+
+  app.addHook('onRequest', async (request, reply) => {
+    const incomingId = request.headers['x-request-id'];
+    const requestId = typeof incomingId === 'string' && incomingId.length > 0
+      ? incomingId
+      : crypto.randomUUID();
+    (request as unknown as Record<string, unknown>).requestId = requestId;
+    void reply.header('X-Request-Id', requestId);
+  });
 
   registerIpBlocklistHook(app);
 

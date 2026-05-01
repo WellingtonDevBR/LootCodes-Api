@@ -17,6 +17,10 @@ const envSchema = z.object({
 
   RESEND_API_KEY: z.string().min(1),
 
+  STRIPE_SECRET_KEY: z.string().optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  PAYPAL_WEBHOOK_ID: z.string().optional(),
+
   ALGOLIA_APP_ID: z.string().optional(),
   ALGOLIA_SEARCH_KEY: z.string().optional(),
   ALGOLIA_INDEX_NAME: z.string().default('products'),
