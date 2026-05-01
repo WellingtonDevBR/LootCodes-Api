@@ -50,6 +50,8 @@ install_ubuntu() {
 }
 
 if grep -qi 'amazon linux' /etc/os-release 2>/dev/null; then
+  dnf install -y amazon-ssm-agent || true
+  systemctl enable --now amazon-ssm-agent || true
   install_al2023
 elif grep -qi 'ubuntu' /etc/os-release 2>/dev/null; then
   install_ubuntu

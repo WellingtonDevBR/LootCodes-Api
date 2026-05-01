@@ -33,6 +33,10 @@ resource "aws_instance" "api" {
   monitoring = true
 
   lifecycle {
+    precondition {
+      condition     = local.subnet_id != null
+      error_message = "No subnet could be selected. Set var.subnet_id in terraform.tfvars, or when associate_public_ip is true ensure a map_public_ip_on_launch subnet exists outside availability_zones_exclude."
+    }
     ignore_changes = [ami]
   }
 

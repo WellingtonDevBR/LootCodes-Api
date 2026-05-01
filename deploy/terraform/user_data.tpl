@@ -2,9 +2,13 @@
 set -euo pipefail
 exec > >(tee /var/log/user-data.log | logger -t user-data -s 2>/dev/console) 2>&1
 
+# SSM agent: ensure it is present and running before long Docker installs (register early for Session Manager).
+dnf install -y amazon-ssm-agent || true
+systemctl enable --now amazon-ssm-agent || true
+
 dnf install -y docker awscli
 if ! dnf install -y docker-compose-plugin; then
-  COMPOSE_VER="${DOCKER_COMPOSE_VERSION:-2.24.7}"
+  COMPOSE_VER="$${DOCKER_COMPOSE_VERSION:-2.24.7}"
   ARCH=$(uname -m)
   case "$ARCH" in
     x86_64) CARCH=x86_64 ;;
@@ -12,7 +16,7 @@ if ! dnf install -y docker-compose-plugin; then
     *) echo "Unsupported arch: $ARCH"; exit 1 ;;
   esac
   mkdir -p /usr/local/lib/docker/cli-plugins
-  curl -fsSL "https://github.com/docker/compose/releases/download/v${COMPOSE_VER}/docker-compose-linux-${CARCH}" \
+  curl -fsSL "https://github.com/docker/compose/releases/download/v$${COMPOSE_VER}/docker-compose-linux-$${CARCH}" \
     -o /usr/local/lib/docker/cli-plugins/docker-compose
   chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 fi
