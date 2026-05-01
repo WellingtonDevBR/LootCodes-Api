@@ -95,18 +95,33 @@ jobs:
             echo "Set GitHub variable EC2_INSTANCE_IDS (comma or space separated)."
             exit 1
           fi
+          echo "Deploy role identity — EC2 must exist in this account and region:"
+          aws sts get-caller-identity
           FAIL=0
           for id in $(echo "$INSTANCE_IDS" | tr ',' ' '); do
             id=$(echo "$id" | xargs)
             [ -z "$id" ] && continue
 
+            errf=$(mktemp)
+            set +e
             st=$(aws ec2 describe-instances \
               --region "$AWS_REGION" \
               --instance-ids "$id" \
               --query 'Reservations[0].Instances[0].State.Name' \
-              --output text 2>/dev/null || echo "__err__")
-            if [ "$st" = "__err__" ] || [ "$st" = "None" ] || [ -z "$st" ]; then
-              echo "::error::EC2 $id was not found in region $AWS_REGION. Set repository variable AWS_REGION to the instance region (e.g. us-east-1), or fix EC2_INSTANCE_IDS."
+              --output text 2>"$errf")
+            ec2_code=$?
+            set -e
+            if [ "$ec2_code" -ne 0 ]; then
+              echo "::error::aws ec2 describe-instances failed for $id (exit $ec2_code). If you see AccessDenied, add ec2:DescribeInstances to the OIDC deploy role (deploy/github-actions-deploy-role-policy.example.json). Otherwise fix region/account/instance id."
+              cat "$errf" >&2 || true
+              rm -f "$errf"
+              FAIL=1
+              continue
+            fi
+            rm -f "$errf"
+
+            if [ "$st" = "None" ] || [ -z "$st" ]; then
+              echo "::error::EC2 $id not visible in $AWS_REGION for the account above. Common causes: AWS_ROLE_ARN is a different account than the EC2, instance was terminated and removed, stale EC2_INSTANCE_IDS, or wrong AWS_REGION."
               FAIL=1
               continue
             fi
