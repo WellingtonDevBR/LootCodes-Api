@@ -40,7 +40,8 @@ Terraform in **`backend/deploy/terraform`** creates a **dedicated** API instance
 
 3. At your DNS host, create the **ACM validation** CNAME shown in **`terraform output acm_dns_validation_records`** (name + value exactly as issued).
 4. Point **`api_fqdn`** at the load balancer: **CNAME** `api` → **`alb_dns_name`** output (e.g. `xxx.us-east-1.elb.amazonaws.com`). Remove any **A** record that pointed at the EC2 public IP.
-5. Run **`terraform apply`** again until **`aws_acm_certificate_validation`** and **`aws_lb_listener.https`** succeed.
+5. When ACM is **ISSUED** (AWS Console → Certificate Manager), set **`create_alb_https_listener = true`** and run **`terraform apply`** to create **:443** and complete **`aws_acm_certificate_validation`** if needed.
+6. Set **`alb_redirect_http_to_https = true`** and apply so port **80** returns **301** to HTTPS.
 - **Hardening**: **IMDSv2 required**, **encrypted gp3** root volume, **detailed monitoring** on.
 
 **Greenfield (new server)**

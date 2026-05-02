@@ -14,7 +14,11 @@ output "private_ip" {
 
 output "api_url_example" {
   description = "Health check URL (use after deploy and .env)."
-  value       = var.enable_https_alb ? "https://${var.api_fqdn}/health" : "http://${aws_instance.api.public_ip}:3000/health"
+  value = (
+    !var.enable_https_alb ? "http://${aws_instance.api.public_ip}:3000/health" : (
+      var.create_alb_https_listener ? "https://${var.api_fqdn}/health" : "http://${aws_lb.api[0].dns_name}/health"
+    )
+  )
 }
 
 output "alb_dns_name" {
@@ -23,12 +27,12 @@ output "alb_dns_name" {
 }
 
 output "https_api_url" {
-  description = "Canonical HTTPS base URL when ALB is enabled."
-  value       = var.enable_https_alb ? "https://${var.api_fqdn}" : null
+  description = "Canonical HTTPS base URL after ACM is issued and create_alb_https_listener is true."
+  value       = var.enable_https_alb && var.create_alb_https_listener ? "https://${var.api_fqdn}" : null
 }
 
 output "acm_dns_validation_records" {
-  description = "CNAME records to create at your DNS provider when route53_zone_id is empty (ACM certificate must validate before HTTPS listener succeeds)."
+  description = "CNAME records for ACM; after they propagate, set create_alb_https_listener = true and apply."
   value = var.enable_https_alb ? [
     for dvo in aws_acm_certificate.api[0].domain_validation_options : {
       name  = dvo.resource_record_name

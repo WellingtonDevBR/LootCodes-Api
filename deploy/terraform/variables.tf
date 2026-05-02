@@ -125,3 +125,15 @@ variable "create_route53_alias_for_api" {
   description = "When enable_https_alb is true, create an A (alias) record from api_fqdn to the ALB. Set false if you manage DNS elsewhere (update manually after apply)."
   default     = true
 }
+
+variable "alb_redirect_http_to_https" {
+  type        = bool
+  description = "When enable_https_alb is true, port 80 behavior: true = 301 redirect to HTTPS (use only after ACM cert is ISSUED and :443 listener exists); false = forward to targets so HTTP works while cert is pending."
+  default     = false
+}
+
+variable "create_alb_https_listener" {
+  type        = bool
+  description = "When enable_https_alb is true, create ACM validation wait + :443 listener. Set false until the ACM DNS validation CNAME exists and ACM shows ISSUED (or use after first apply, then set true)."
+  default     = false
+}

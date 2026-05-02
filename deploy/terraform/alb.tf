@@ -6,7 +6,7 @@ resource "aws_security_group" "alb" {
   vpc_id      = local.vpc_id
 
   ingress {
-    description = "HTTP redirect to HTTPS"
+    description = "HTTP from internet"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
@@ -31,6 +31,7 @@ resource "aws_security_group" "alb" {
 
   lifecycle {
     create_before_destroy = true
+    ignore_changes        = [description]
   }
 
   tags = {
@@ -120,19 +121,19 @@ resource "aws_route53_record" "cert_validation" {
 }
 
 resource "aws_acm_certificate_validation" "api" {
-  count = var.enable_https_alb ? 1 : 0
+  count = var.enable_https_alb && var.create_alb_https_listener ? 1 : 0
 
   certificate_arn = aws_acm_certificate.api[0].arn
   # Works with Route53 records managed here or CNAMEs created at an external DNS host.
   validation_record_fqdns = [for dvo in aws_acm_certificate.api[0].domain_validation_options : dvo.resource_record_name]
 
   timeouts {
-    create = "20m"
+    create = "45m"
   }
 }
 
 resource "aws_lb_listener" "https" {
-  count = var.enable_https_alb ? 1 : 0
+  count = var.enable_https_alb && var.create_alb_https_listener ? 1 : 0
 
   load_balancer_arn = aws_lb.api[0].arn
   port              = "443"
@@ -154,12 +155,25 @@ resource "aws_lb_listener" "http_redirect" {
   protocol          = "HTTP"
 
   default_action {
-    type = "redirect"
+    type = var.alb_redirect_http_to_https ? "redirect" : "forward"
 
-    redirect {
-      port        = "443"
-      protocol    = "HTTPS"
-      status_code = "HTTP_301"
+    dynamic "forward" {
+      for_each = var.alb_redirect_http_to_https ? [] : [1]
+      content {
+        target_group {
+          arn    = aws_lb_target_group.api[0].arn
+          weight = 1
+        }
+      }
+    }
+
+    dynamic "redirect" {
+      for_each = var.alb_redirect_http_to_https ? [1] : []
+      content {
+        port        = "443"
+        protocol    = "HTTPS"
+        status_code = "HTTP_301"
+      }
     }
   }
 }

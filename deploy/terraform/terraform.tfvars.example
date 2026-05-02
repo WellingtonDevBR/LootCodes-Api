@@ -15,11 +15,13 @@ api_ingress_cidr_blocks = ["203.0.113.10/32"]
 # Prefer false and use SSM Session Manager only.
 enable_unrestricted_api_ingress = false
 
-# Public API via Application Load Balancer (HTTPS only, HTTP redirects).
-# enable_https_alb          = true
-# api_fqdn                  = "api.lootcodes.com"
-# route53_zone_id           = "Zxxxxxxxxxxxx"  # hosted zone for lootcodes.com
-# create_route53_alias_for_api = true          # false if DNS is outside Route53
+# Public API via Application Load Balancer.
+# enable_https_alb               = true
+# api_fqdn                       = "api.lootcodes.com"
+# route53_zone_id                = "Zxxxxxxxxxxxx"  # optional if DNS is external
+# create_route53_alias_for_api   = true            # false if DNS is outside Route53
+# alb_redirect_http_to_https     = false
+# create_alb_https_listener      = false   # set true after ACM validation CNAME + api hostname point at ALB
 # When ALB is on, port 3000 is only open to the ALB — no need for wide api_ingress_cidr_blocks.
 
 associate_public_ip = true
