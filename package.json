@@ -24,6 +24,7 @@
     "@sentry/profiling-node": "^10.51.0",
     "@supabase/supabase-js": "^2.75.1",
     "algoliasearch": "^5.52.0",
+    "dotenv": "16.4.7",
     "fastify": "^5.3.3",
     "reflect-metadata": "^0.2.2",
     "resend": "^4.0.0",

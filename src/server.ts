@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import 'dotenv/config';
 import * as Sentry from '@sentry/node';
 import './di/container.js';
 import { buildApp } from './app.js';

@@ -7,7 +7,7 @@ Fastify **5** API server for LootCodes: hexagonal architecture (ports & adapters
 ```bash
 cp .env.example .env   # fill all required keys (see src/config/env.ts)
 npm ci
-npm run dev
+npm run dev            # loads `.env` from project root via dotenv
 ```
 
 Health: `GET /health`
