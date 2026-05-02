@@ -14,6 +14,7 @@ import type { SubscribeStockNotificationUseCase } from '../../core/use-cases/pro
 import type { UnsubscribeStockNotificationUseCase } from '../../core/use-cases/products/stock/unsubscribe-stock-notification.use-case.js';
 import type { IsSubscribedToStockUseCase } from '../../core/use-cases/products/stock/is-subscribed-to-stock.use-case.js';
 import type { IsVariantPurchasableUseCase } from '../../core/use-cases/products/stock/is-variant-purchasable.use-case.js';
+import type { GetVariantRegionUseCase } from '../../core/use-cases/products/catalog/get-variant-region.use-case.js';
 import type { GetPlatformsUseCase } from '../../core/use-cases/products/reference/get-platforms.use-case.js';
 import type { GetRegionsUseCase } from '../../core/use-cases/products/reference/get-regions.use-case.js';
 import type { GetGenresUseCase } from '../../core/use-cases/products/reference/get-genres.use-case.js';
@@ -268,6 +269,29 @@ export async function productRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const uc = container.resolve<IsVariantPurchasableUseCase>(UC_TOKENS.IsVariantPurchasable);
       const result = await uc.execute(request.params.variantId, request.query.quantity ?? 1);
+      return reply.send(result);
+    },
+  );
+
+  app.get<{ Params: { variantId: string } }>(
+    '/variants/:variantId/region',
+    {
+      schema: {
+        params: {
+          type: 'object',
+          required: ['variantId'],
+          properties: {
+            variantId: { type: 'string', format: 'uuid' },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const uc = container.resolve<GetVariantRegionUseCase>(UC_TOKENS.GetVariantRegion);
+      const result = await uc.execute(request.params.variantId);
+      if (!result) {
+        return reply.code(404).send({ error: 'Variant not found' });
+      }
       return reply.send(result);
     },
   );

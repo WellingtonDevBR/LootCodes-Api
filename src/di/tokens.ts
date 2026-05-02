@@ -268,6 +268,13 @@ export const UC_TOKENS = {
   // Payment use cases
   VerifyAndFulfill: Symbol.for('VerifyAndFulfillUseCase'),
   CapturePayment: Symbol.for('CapturePaymentUseCase'),
+  RecordFailedPayment: Symbol.for('RecordFailedPaymentUseCase'),
+
+  // Checkout — additional
+  ValidateApprovalToken: Symbol.for('ValidateApprovalTokenUseCase'),
+
+  // Products — variant region
+  GetVariantRegion: Symbol.for('GetVariantRegionUseCase'),
 
   // Webhook use cases
   HandleStripeWebhook: Symbol.for('HandleStripeWebhookUseCase'),

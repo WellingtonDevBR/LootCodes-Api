@@ -7,6 +7,7 @@ import type { CancelCheckoutUseCase } from '../../core/use-cases/checkout/cancel
 import type { CheckoutWithApprovalUseCase } from '../../core/use-cases/checkout/checkout-with-approval.use-case.js';
 import type { ValidatePromoCodeUseCase } from '../../core/use-cases/checkout/validate-promo-code.use-case.js';
 import type { GetPaymentMethodsConfigUseCase } from '../../core/use-cases/checkout/get-payment-methods-config.use-case.js';
+import type { ValidateApprovalTokenUseCase } from '../../core/use-cases/checkout/validate-approval-token.use-case.js';
 import type { CheckoutInitDto, CheckoutApprovalDto, CheckoutUpdateDto } from '../../core/use-cases/checkout/checkout.types.js';
 import { authGuard } from '../middleware/auth.guard.js';
 import { buildRequestContext } from '../middleware/request-context.js';
@@ -127,6 +128,18 @@ export async function checkoutRoutes(app: FastifyInstance) {
         request.body.items,
         user?.id,
       );
+      return reply.send(result);
+    },
+  );
+
+  app.get<{ Querystring: { holdId: string; token: string } }>(
+    '/approval-token',
+    async (request, reply) => {
+      const uc = container.resolve<ValidateApprovalTokenUseCase>(UC_TOKENS.ValidateApprovalToken);
+      const result = await uc.execute(request.query.holdId, request.query.token);
+      if (!result) {
+        return reply.code(404).send({ error: 'Approval token not found or expired' });
+      }
       return reply.send(result);
     },
   );

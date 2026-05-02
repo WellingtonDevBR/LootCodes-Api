@@ -3,6 +3,7 @@ import { container } from 'tsyringe';
 import { UC_TOKENS } from '../../di/tokens.js';
 import type { VerifyAndFulfillUseCase } from '../../core/use-cases/payments/verify-and-fulfill.use-case.js';
 import type { CapturePaymentUseCase } from '../../core/use-cases/payments/capture-payment.use-case.js';
+import type { RecordFailedPaymentUseCase, RecordFailedPaymentDto } from '../../core/use-cases/payments/record-failed-payment.use-case.js';
 import type { VerifyPaymentDto, CapturePaymentDto } from '../../core/use-cases/payments/payment.types.js';
 import { buildRequestContext } from '../middleware/request-context.js';
 import { createRateLimitGuard } from '../middleware/rate-limit.guard.js';
@@ -48,6 +49,18 @@ export async function paymentRoutes(app: FastifyInstance) {
       const uc = container.resolve<CapturePaymentUseCase>(UC_TOKENS.CapturePayment);
       const result = await uc.execute(request.body);
       return reply.send(result);
+    },
+  );
+
+  app.post<{ Body: RecordFailedPaymentDto }>(
+    '/record-failure',
+    {
+      preHandler: [paymentRateLimit],
+    },
+    async (request, reply) => {
+      const uc = container.resolve<RecordFailedPaymentUseCase>(UC_TOKENS.RecordFailedPayment);
+      await uc.execute(request.body);
+      return reply.send({ success: true });
     },
   );
 }

@@ -263,6 +263,13 @@ import { GetClaimPromoCodeUseCase } from '../core/use-cases/price-match/get-clai
 // --- Payment use cases ---
 import { VerifyAndFulfillUseCase } from '../core/use-cases/payments/verify-and-fulfill.use-case.js';
 import { CapturePaymentUseCase } from '../core/use-cases/payments/capture-payment.use-case.js';
+import { RecordFailedPaymentUseCase } from '../core/use-cases/payments/record-failed-payment.use-case.js';
+
+// --- Checkout additional use cases ---
+import { ValidateApprovalTokenUseCase } from '../core/use-cases/checkout/validate-approval-token.use-case.js';
+
+// --- Products variant region ---
+import { GetVariantRegionUseCase } from '../core/use-cases/products/catalog/get-variant-region.use-case.js';
 
 // --- Webhook use cases ---
 import { HandleStripeWebhookUseCase } from '../core/use-cases/webhooks/handle-stripe-webhook.use-case.js';
@@ -564,6 +571,13 @@ container.register(UC_TOKENS.GetClaimPromoCode, { useClass: GetClaimPromoCodeUse
 // --- Payment Use Cases ---
 container.register(UC_TOKENS.VerifyAndFulfill, { useClass: VerifyAndFulfillUseCase });
 container.register(UC_TOKENS.CapturePayment, { useClass: CapturePaymentUseCase });
+container.register(UC_TOKENS.RecordFailedPayment, { useClass: RecordFailedPaymentUseCase });
+
+// --- Checkout Additional Use Cases ---
+container.register(UC_TOKENS.ValidateApprovalToken, { useClass: ValidateApprovalTokenUseCase });
+
+// --- Products Variant Region ---
+container.register(UC_TOKENS.GetVariantRegion, { useClass: GetVariantRegionUseCase });
 
 // --- Webhook Use Cases ---
 container.register(UC_TOKENS.HandleStripeWebhook, { useClass: HandleStripeWebhookUseCase });
