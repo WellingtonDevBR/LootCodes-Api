@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx --import ./src/instrument.ts watch src/server.ts",
+    "dev": "tsx --import ./src/instrument.ts --watch src/server.ts",
     "build": "tsc && sentry-cli sourcemaps inject ./dist && sentry-cli sourcemaps upload --org $SENTRY_ORG --project $SENTRY_PROJECT ./dist",
     "build:no-sentry": "tsc",
     "start": "node --import ./dist/instrument.js dist/server.js",
