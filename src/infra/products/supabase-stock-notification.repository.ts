@@ -28,4 +28,14 @@ export class SupabaseStockNotificationRepository implements IStockNotificationRe
     });
     return row !== null;
   }
+
+  async getSubscribedVariantIds(userId: string, variantIds: string[]): Promise<string[]> {
+    if (!variantIds.length) return [];
+    const rows = await this.db.query<{ variant_id: string }>('stock_notifications', {
+      select: 'variant_id',
+      eq: [['user_id', userId], ['status', 'pending']],
+      in: [['variant_id', variantIds]],
+    });
+    return rows.map((r) => r.variant_id);
+  }
 }

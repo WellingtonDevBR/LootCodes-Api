@@ -48,24 +48,21 @@ export class SupabaseAnalyticsRepository implements IAnalyticsRepository {
   }
 
   async insertCartEvent(event: CartEvent): Promise<void> {
-    const extraContext: Record<string, unknown> = {};
-    if (event.product_id) extraContext.product_id = event.product_id;
-    if (event.cart_value != null) extraContext.cart_value = event.cart_value;
-    if (event.guest_email) extraContext.guest_email = event.guest_email;
-    if (event.user_agent) extraContext.user_agent = event.user_agent;
-    if (event.page_path) extraContext.page_path = event.page_path;
-
-    const merged = Object.keys(extraContext).length > 0 || event.metadata
-      ? { ...extraContext, ...event.metadata }
-      : undefined;
+    const meta = (event.metadata ?? {}) as Record<string, unknown>;
+    const productId = event.product_id ?? meta.productId as string | undefined;
+    const variantId = event.variant_id ?? meta.variantId as string | undefined;
 
     await this.db.insert('cart_events', {
       session_id: event.session_id,
       user_id: event.user_id,
-      action: event.event_type,
-      variant_id: event.variant_id,
+      event_type: event.event_type,
+      product_id: productId,
+      variant_id: variantId,
       quantity: event.quantity,
-      metadata: merged,
+      cart_value: event.cart_value,
+      guest_email: event.guest_email,
+      user_agent: event.user_agent,
+      page_path: event.page_path,
     });
   }
 

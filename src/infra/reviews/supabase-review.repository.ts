@@ -38,9 +38,11 @@ export class SupabaseReviewRepository implements IReviewRepository {
   }
 
   async checkEligibility(userId: string, productId: string): Promise<ReviewEligibility> {
-    return this.db.rpc<ReviewEligibility>('can_user_review_product', {
-      p_user_id: userId,
+    const result = await this.db.rpc<ReviewEligibility | ReviewEligibility[]>('can_user_review_product_for_user', {
       p_product_id: productId,
+      p_user_id: userId,
     });
+    const row = Array.isArray(result) ? result[0] : result;
+    return row ?? { eligible: false, reason: 'error' };
   }
 }

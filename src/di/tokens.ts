@@ -179,6 +179,8 @@ export const UC_TOKENS = {
   GetVariants: Symbol.for('GetVariantsUseCase'),
   GetGallery: Symbol.for('GetGalleryUseCase'),
   GetFeatured: Symbol.for('GetFeaturedUseCase'),
+  GetCompositeProductPage: Symbol.for('GetCompositeProductPageUseCase'),
+  GetProductUserContext: Symbol.for('GetProductUserContextUseCase'),
 
   // Products — stock
   CheckStock: Symbol.for('CheckStockUseCase'),

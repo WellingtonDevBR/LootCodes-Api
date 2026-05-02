@@ -7,6 +7,8 @@ import type { GetProductByIdUseCase } from '../../core/use-cases/products/catalo
 import type { GetVariantsUseCase } from '../../core/use-cases/products/catalog/get-variants.use-case.js';
 import type { GetGalleryUseCase } from '../../core/use-cases/products/catalog/get-gallery.use-case.js';
 import type { GetFeaturedUseCase } from '../../core/use-cases/products/catalog/get-featured.use-case.js';
+import type { GetCompositeProductPageUseCase } from '../../core/use-cases/products/catalog/get-composite-product-page.use-case.js';
+import type { GetProductUserContextUseCase } from '../../core/use-cases/products/catalog/get-product-user-context.use-case.js';
 import type { BatchCheckStockUseCase } from '../../core/use-cases/products/stock/batch-check-stock.use-case.js';
 import type { SubscribeStockNotificationUseCase } from '../../core/use-cases/products/stock/subscribe-stock-notification.use-case.js';
 import type { UnsubscribeStockNotificationUseCase } from '../../core/use-cases/products/stock/unsubscribe-stock-notification.use-case.js';
@@ -145,6 +147,59 @@ export async function productRoutes(app: FastifyInstance) {
     const featured = await uc.execute();
     return reply.send(featured);
   });
+
+  // ─── Composite Product Page (public) ─────────────────────────────
+
+  app.get<{ Params: { slug: string }; Querystring: { country?: string; currency?: string } }>(
+    '/slug/:slug/full',
+    {
+      schema: {
+        params: slugParamsSchema,
+        querystring: {
+          type: 'object',
+          properties: {
+            country: { type: 'string', minLength: 2, maxLength: 2 },
+            currency: { type: 'string', minLength: 3, maxLength: 3 },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const uc = container.resolve<GetCompositeProductPageUseCase>(UC_TOKENS.GetCompositeProductPage);
+      const result = await uc.execute(request.params.slug, request.query.country, request.query.currency);
+      return reply.send(result);
+    },
+  );
+
+  // ─── Product User Context (authenticated) ─────────────────────────
+
+  app.get<{ Params: { slug: string }; Querystring: { variantIds?: string } }>(
+    '/slug/:slug/user-context',
+    {
+      preHandler: [authGuard],
+      schema: {
+        params: slugParamsSchema,
+        querystring: {
+          type: 'object',
+          properties: {
+            variantIds: { type: 'string' },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { authUser } = request as unknown as AuthenticatedRequest;
+      const slugUc = container.resolve<GetProductBySlugUseCase>(UC_TOKENS.GetProductBySlug);
+      const product = await slugUc.execute(request.params.slug);
+      const variantIds = request.query.variantIds
+        ? request.query.variantIds.split(',').filter(Boolean)
+        : product.variants.map((v) => v.id);
+
+      const uc = container.resolve<GetProductUserContextUseCase>(UC_TOKENS.GetProductUserContext);
+      const result = await uc.execute(authUser.id, product.product.id, variantIds);
+      return reply.send(result);
+    },
+  );
 
   // ─── Stock ──────────────────────────────────────────────────────
 

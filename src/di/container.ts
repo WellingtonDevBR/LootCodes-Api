@@ -174,6 +174,8 @@ import { GetProductByIdUseCase } from '../core/use-cases/products/catalog/get-pr
 import { GetVariantsUseCase } from '../core/use-cases/products/catalog/get-variants.use-case.js';
 import { GetGalleryUseCase } from '../core/use-cases/products/catalog/get-gallery.use-case.js';
 import { GetFeaturedUseCase } from '../core/use-cases/products/catalog/get-featured.use-case.js';
+import { GetCompositeProductPageUseCase } from '../core/use-cases/products/catalog/get-composite-product-page.use-case.js';
+import { GetProductUserContextUseCase } from '../core/use-cases/products/catalog/get-product-user-context.use-case.js';
 
 // --- Products: stock use cases ---
 import { CheckStockUseCase } from '../core/use-cases/products/stock/check-stock.use-case.js';
@@ -473,6 +475,8 @@ container.register(UC_TOKENS.GetProductById, { useClass: GetProductByIdUseCase }
 container.register(UC_TOKENS.GetVariants, { useClass: GetVariantsUseCase });
 container.register(UC_TOKENS.GetGallery, { useClass: GetGalleryUseCase });
 container.register(UC_TOKENS.GetFeatured, { useClass: GetFeaturedUseCase });
+container.register(UC_TOKENS.GetCompositeProductPage, { useClass: GetCompositeProductPageUseCase });
+container.register(UC_TOKENS.GetProductUserContext, { useClass: GetProductUserContextUseCase });
 
 // --- Products: Stock Use Cases ---
 container.register(UC_TOKENS.CheckStock, { useClass: CheckStockUseCase });
