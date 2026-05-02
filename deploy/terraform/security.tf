@@ -1,6 +1,6 @@
 resource "aws_security_group" "api" {
   name_prefix = "${local.name_prefix}-sg-"
-  description = "LootCodes API EC2 - SSM egress, API on 3000 from allowed CIDRs only"
+  description = var.enable_https_alb ? "LootCodes API EC2 - SSM egress; API :3000 from ALB only" : "LootCodes API EC2 - SSM egress, API on 3000 from allowed CIDRs only"
   vpc_id      = local.vpc_id
 
   # No default ingress; explicit rules below.
@@ -23,7 +23,18 @@ resource "aws_security_group" "api" {
   }
 
   dynamic "ingress" {
-    for_each = length(local.api_ingress) > 0 ? [1] : []
+    for_each = var.enable_https_alb ? [1] : []
+    content {
+      description     = "Fastify API port 3000 from ALB only"
+      from_port       = 3000
+      to_port         = 3000
+      protocol        = "tcp"
+      security_groups = [aws_security_group.alb[0].id]
+    }
+  }
+
+  dynamic "ingress" {
+    for_each = !var.enable_https_alb && length(local.api_ingress) > 0 ? [1] : []
     content {
       description = "Fastify API port 3000 (host and container)"
       from_port   = 3000

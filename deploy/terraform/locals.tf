@@ -30,4 +30,13 @@ locals {
   api_ingress = var.enable_unrestricted_api_ingress ? ["0.0.0.0/0"] : var.api_ingress_cidr_blocks
 
   name_prefix = "${var.project_name}-${var.environment}"
+
+  # One public subnet per AZ for ALB (requires ≥2 AZs when enable_https_alb — see checks.tf).
+  public_subnets_by_az = {
+    for id in local.public_subnets_usable : data.aws_subnet.vpc_subnet[id].availability_zone => id...
+  }
+
+  alb_subnet_ids = var.enable_https_alb ? [
+    for az in sort(keys(local.public_subnets_by_az)) : sort(local.public_subnets_by_az[az])[0]
+  ] : []
 }

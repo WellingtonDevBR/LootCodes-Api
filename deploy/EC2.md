@@ -1,8 +1,8 @@
 # Run the API on EC2 (Docker + ECR + GitHub Actions)
 
-This walks you from zero to a working API on EC2 at `**http://YOUR_PUBLIC_IP:3000**` (health check: `/health`).
+This walks you from zero to a working API on EC2 at `**http://YOUR_PUBLIC_IP:3000**` (health check: `/health`), or **`https://api.example.com`** when you enable the optional ALB in Terraform.
 
-**Port 3000:** The app and Docker **both** use **3000** (see `PORT` default in `src/config/env.ts`, `docker-compose.prod.yml`, and `Dockerfile`). Security group opens **3000** to your allowed CIDRs.
+**Port 3000:** The app and Docker **both** use **3000** (see `PORT` default in `src/config/env.ts`, `docker-compose.prod.yml`, and `Dockerfile`). Without an ALB, the security group opens **3000** to your allowed CIDRs. With **`enable_https_alb = true`**, **3000** is open **only** to the ALB security group; clients use **HTTPS on 443** (HTTP on 80 returns **301** to HTTPS).
 
 ---
 
@@ -23,7 +23,8 @@ Terraform in **`backend/deploy/terraform`** creates a **dedicated** API instance
 - **Amazon Linux 2023** + **user-data** bootstrap: Docker, Compose plugin, `awscli`, deploy directory.
 - **IAM instance profile**: SSM (`AmazonSSMManagedInstanceCore`) + **ECR pull** for your repository (no blanket admin).
 - **EC2 key pair**: **`ec2_key_pair_name`** defaults to **`Eneba`** (use with your existing **`Eneba.pem`** — the `.pem` stays local; Terraform only references the key name already registered under **EC2 → Key pairs**).  
-- **Security group**: **HTTPS egress**; **port 3000** only from `api_ingress_cidr_blocks` (your `/32` by default). **No SSH** on port 22 unless you set `ssh_ingress_cidr_blocks` (SSM still works without SSH).
+- **Security group**: **HTTPS egress**; **port 3000** from `api_ingress_cidr_blocks` when **`enable_https_alb`** is false, or **only from the ALB** when **`enable_https_alb`** is true. **No SSH** on port 22 unless you set `ssh_ingress_cidr_blocks` (SSM still works without SSH).
+- **Optional ALB** (`enable_https_alb`): ACM certificate (DNS validation in Route53), internet-facing ALB in **two** public AZs, **443** forwards to the instance **:3000**, **80** **301** redirects to **HTTPS**. Optional **Route53 alias** `api_fqdn` to the ALB. Requires **`api_fqdn`**, **`route53_zone_id`**, and a VPC with at least **two** `map_public_ip_on_launch` subnets in different AZs (see `checks.tf`).
 - **Hardening**: **IMDSv2 required**, **encrypted gp3** root volume, **detailed monitoring** on.
 
 **Greenfield (new server)**

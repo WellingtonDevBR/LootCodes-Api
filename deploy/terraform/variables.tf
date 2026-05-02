@@ -101,3 +101,27 @@ variable "extra_tags" {
   description = "Additional tags for all tagged resources."
   default     = {}
 }
+
+variable "enable_https_alb" {
+  type        = bool
+  description = "If true, create an internet-facing ALB with ACM TLS, HTTP→HTTPS redirect, and Route53 DNS validation. EC2 :3000 accepts traffic only from the ALB security group."
+  default     = false
+}
+
+variable "api_fqdn" {
+  type        = string
+  description = "Public hostname for the API (e.g. api.lootcodes.com). Required when enable_https_alb is true. Used for ACM cert and optional Route53 alias."
+  default     = ""
+}
+
+variable "route53_zone_id" {
+  type        = string
+  description = "Route53 hosted zone ID for api_fqdn parent zone (e.g. Z123... for lootcodes.com). Required when enable_https_alb is true for ACM DNS validation."
+  default     = ""
+}
+
+variable "create_route53_alias_for_api" {
+  type        = bool
+  description = "When enable_https_alb is true, create an A (alias) record from api_fqdn to the ALB. Set false if you manage DNS elsewhere (update manually after apply)."
+  default     = true
+}

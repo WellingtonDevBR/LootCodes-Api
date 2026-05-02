@@ -13,8 +13,18 @@ output "private_ip" {
 }
 
 output "api_url_example" {
-  description = "Health check (after image deploy and .env are in place)."
-  value       = "http://${aws_instance.api.public_ip}:3000/health"
+  description = "Health check URL (use after deploy and .env)."
+  value       = var.enable_https_alb ? "https://${var.api_fqdn}/health" : "http://${aws_instance.api.public_ip}:3000/health"
+}
+
+output "alb_dns_name" {
+  description = "ALB DNS hostname (for manual DNS or verification)."
+  value       = var.enable_https_alb ? aws_lb.api[0].dns_name : null
+}
+
+output "https_api_url" {
+  description = "Canonical HTTPS base URL when ALB is enabled."
+  value       = var.enable_https_alb ? "https://${var.api_fqdn}" : null
 }
 
 output "ssm_session_hint" {
