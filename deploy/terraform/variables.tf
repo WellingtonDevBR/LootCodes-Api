@@ -48,7 +48,7 @@ variable "associate_public_ip" {
 
 variable "allocate_elastic_ip" {
   type        = bool
-  description = "Create one tagged Elastic IP (Name = project-environment-ec2-eip) and attach it to the API EC2 instance. Does not apply to the ALB — ALBs use AWS-managed IPs; use alb_dns_name or Route53."
+  description = "Create one tagged customer Elastic IP (Name = project-environment-ec2-eip) on the API EC2 instance. Does not control the ALB: internet-facing ALBs still show extra EIPs in the console (ServiceManaged=alb, one per subnet/AZ)—those are normal and not created by this flag."
   default     = true
 }
 
