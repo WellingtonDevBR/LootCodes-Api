@@ -82,8 +82,8 @@ export class SupabaseAuthAdapter implements IAuthProvider {
   }
 
   async getUserByToken(token: string): Promise<AuthUser | null> {
-    const client = this.getAnonClient(token);
-    const { data, error } = await client.auth.getUser();
+    const client = this.getAnonClient();
+    const { data, error } = await client.auth.getUser(token);
     if (error || !data.user) return null;
     return mapUser(data.user as unknown as Record<string, unknown>);
   }

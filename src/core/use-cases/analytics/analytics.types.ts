@@ -18,9 +18,14 @@ export interface ActivityEvent {
 export interface CartEvent {
   session_id: string;
   user_id?: string;
-  action: 'add' | 'remove' | 'checkout_started' | 'checkout_completed' | 'checkout_abandoned';
+  event_type: string;
   variant_id?: string;
+  product_id?: string;
   quantity?: number;
+  cart_value?: number;
+  guest_email?: string;
+  user_agent?: string;
+  page_path?: string;
   metadata?: Record<string, unknown>;
 }
 

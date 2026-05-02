@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { container } from 'tsyringe';
-import { UC_TOKENS } from '../../di/tokens.js';
+import { UC_TOKENS, TOKENS } from '../../di/tokens.js';
 import type { GetOrderDetailUseCase } from '../../core/use-cases/orders/get-order-detail.use-case.js';
 import type { GetUserOrdersUseCase } from '../../core/use-cases/orders/get-user-orders.use-case.js';
 import type { ValidateAccessTokenUseCase } from '../../core/use-cases/orders/validate-access-token.use-case.js';
@@ -67,6 +67,21 @@ export async function orderRoutes(app: FastifyInstance) {
       const user = getAuthUser(request);
 
       const detail = await uc.execute(request.params.id, user.id);
+      return reply.send(detail);
+    },
+  );
+
+  app.get<{ Params: { id: string } }>(
+    '/:id/full',
+    {
+      preHandler: [authGuard],
+      schema: { params: orderIdParamsSchema },
+    },
+    async (request, reply) => {
+      const uc = container.resolve<GetOrderDetailUseCase>(UC_TOKENS.GetOrderDetail);
+      const user = getAuthUser(request);
+
+      const detail = await uc.executeFullAccess(request.params.id, user.id);
       return reply.send(detail);
     },
   );
@@ -200,6 +215,29 @@ export async function orderRoutes(app: FastifyInstance) {
     },
   );
 
+  app.post<{ Body: { token: string; order_id: string } }>(
+    '/access/token-metadata',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['token', 'order_id'],
+          properties: {
+            token: { type: 'string', minLength: 1 },
+            order_id: { type: 'string', format: 'uuid' },
+          },
+          additionalProperties: false,
+        },
+      },
+    },
+    async (request, reply) => {
+      const orderRepo = container.resolve<import('../../core/ports/order-repository.port.js').IOrderRepository>(TOKENS.OrderRepository);
+      const metadata = await orderRepo.getOrderAccessTokenMetadata(request.body.token, request.body.order_id);
+      if (!metadata) return reply.code(404).send({ error: 'Token not found' });
+      return reply.send(metadata);
+    },
+  );
+
   app.post<{ Params: { keyId: string }; Body: { order_id: string; access_token?: string } }>(
     '/keys/:keyId/log-view',
     {
@@ -260,6 +298,33 @@ export async function orderRoutes(app: FastifyInstance) {
       const uc = container.resolve<LogAccessAttemptUseCase>(UC_TOKENS.LogAccessAttempt);
       await uc.execute(request.body);
       return reply.send({ success: true });
+    },
+  );
+
+  app.post<{ Body: { order_id: string; key_ids: string[] } }>(
+    '/key-view-logs',
+    {
+      preHandler: [authGuard],
+      schema: {
+        body: {
+          type: 'object',
+          required: ['order_id', 'key_ids'],
+          properties: {
+            order_id: { type: 'string', format: 'uuid' },
+            key_ids: {
+              type: 'array',
+              items: { type: 'string', format: 'uuid' },
+              maxItems: 200,
+            },
+          },
+          additionalProperties: false,
+        },
+      },
+    },
+    async (request, reply) => {
+      const orderRepo = container.resolve<import('../../core/ports/order-repository.port.js').IOrderRepository>(TOKENS.OrderRepository);
+      const logs = await orderRepo.getKeyViewLogs(request.body.order_id, request.body.key_ids);
+      return reply.send({ logs });
     },
   );
 }

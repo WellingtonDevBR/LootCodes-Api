@@ -150,6 +150,7 @@ import { ListLibraryUseCase } from '../core/use-cases/library/list-library.use-c
 import { SetLibraryStatusUseCase } from '../core/use-cases/library/set-library-status.use-case.js';
 import { RemoveFromLibraryUseCase } from '../core/use-cases/library/remove-from-library.use-case.js';
 import { UpdateLibraryEntryUseCase } from '../core/use-cases/library/update-library-entry.use-case.js';
+import { GetLibraryProductDetailsUseCase } from '../core/use-cases/library/get-library-product-details.use-case.js';
 
 // --- Notification use cases ---
 import { ListNotificationsUseCase } from '../core/use-cases/notifications/list-notifications.use-case.js';
@@ -448,6 +449,7 @@ container.register(UC_TOKENS.ListLibrary, { useClass: ListLibraryUseCase });
 container.register(UC_TOKENS.SetLibraryStatus, { useClass: SetLibraryStatusUseCase });
 container.register(UC_TOKENS.RemoveFromLibrary, { useClass: RemoveFromLibraryUseCase });
 container.register(UC_TOKENS.UpdateLibraryEntry, { useClass: UpdateLibraryEntryUseCase });
+container.register(UC_TOKENS.GetLibraryProductDetails, { useClass: GetLibraryProductDetailsUseCase });
 
 // --- Notification Use Cases ---
 container.register(UC_TOKENS.ListNotifications, { useClass: ListNotificationsUseCase });

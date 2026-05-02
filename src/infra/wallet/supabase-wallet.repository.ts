@@ -45,4 +45,15 @@ export class SupabaseWalletRepository implements IWalletRepository {
       p_review_id: reviewId,
     });
   }
+
+  async getPurchaseRewardConfig(): Promise<unknown> {
+    return this.db.rpc('get_purchase_reward_config');
+  }
+
+  async getVariantEarnBonuses(variantIds: string[]): Promise<unknown> {
+    if (!variantIds.length) return [];
+    return this.db.rpc('get_variant_earn_bonuses', {
+      p_variant_ids: variantIds,
+    });
+  }
 }

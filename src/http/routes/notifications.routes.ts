@@ -29,9 +29,13 @@ export async function notificationsRoutes(app: FastifyInstance) {
     { preHandler: [authGuard], schema: { querystring: listNotificationsQuerySchema } },
     async (request, reply) => {
       const { authUser } = request as unknown as AuthenticatedRequest;
-      const uc = container.resolve<ListNotificationsUseCase>(UC_TOKENS.ListNotifications);
-      const notifications = await uc.execute(authUser.id, request.query.limit, request.query.offset);
-      return reply.send(notifications);
+      const listUc = container.resolve<ListNotificationsUseCase>(UC_TOKENS.ListNotifications);
+      const countUc = container.resolve<GetUnreadCountUseCase>(UC_TOKENS.GetUnreadCount);
+      const [items, unread_count] = await Promise.all([
+        listUc.execute(authUser.id, request.query.limit, request.query.offset),
+        countUc.execute(authUser.id),
+      ]);
+      return reply.send({ items, unread_count });
     },
   );
 

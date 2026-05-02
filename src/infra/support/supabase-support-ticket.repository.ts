@@ -4,11 +4,20 @@ import type { IDatabase } from '../../core/ports/database.port.js';
 import type { ISupportTicketRepository } from '../../core/ports/support-ticket-repository.port.js';
 import type {
   SupportTicket,
+  SupportTicketWithMessages,
   TicketMessage,
   CreateTicketDto,
   TicketDetail,
   TicketFeedbackDto,
 } from '../../core/use-cases/support/support.types.js';
+
+const TICKET_LIST_SELECT = [
+  'id', 'ticket_number', 'user_id', 'guest_email', 'subject', 'description',
+  'ticket_type', 'status', 'priority', 'order_id', 'order_item_id',
+  'product_key_id', 'created_at', 'updated_at', 'resolved_at',
+].join(', ');
+
+const TICKET_WITH_MESSAGES_SELECT = `${TICKET_LIST_SELECT}, ticket_messages(created_at)`;
 
 @injectable()
 export class SupabaseSupportTicketRepository implements ISupportTicketRepository {
@@ -43,8 +52,18 @@ export class SupabaseSupportTicketRepository implements ISupportTicketRepository
 
   async findByUserId(userId: string): Promise<SupportTicket[]> {
     return this.db.query<SupportTicket>('support_tickets', {
+      select: TICKET_LIST_SELECT,
       eq: [['user_id', userId]],
-      order: { column: 'updated_at', ascending: false },
+      order: { column: 'created_at', ascending: false },
+    });
+  }
+
+  async findByUserIdWithMessages(userId: string): Promise<SupportTicketWithMessages[]> {
+    return this.db.query<SupportTicketWithMessages>('support_tickets', {
+      select: TICKET_WITH_MESSAGES_SELECT,
+      eq: [['user_id', userId]],
+      order: { column: 'created_at', ascending: false },
+      limit: 10,
     });
   }
 

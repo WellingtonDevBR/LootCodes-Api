@@ -23,13 +23,18 @@ export const batchEventsBodySchema = {
 
 export const cartEventBodySchema = {
   type: 'object',
-  required: ['session_id', 'action'],
+  required: ['session_id', 'event_type'],
   properties: {
-    session_id: { type: 'string', format: 'uuid' },
-    user_id: { type: 'string', format: 'uuid' },
-    action: { type: 'string', enum: ['add', 'remove', 'checkout_started', 'checkout_completed', 'checkout_abandoned'] },
-    variant_id: { type: 'string', format: 'uuid' },
+    session_id: { type: 'string', minLength: 1 },
+    user_id: { type: 'string' },
+    event_type: { type: 'string', maxLength: 50 },
+    variant_id: { type: 'string' },
+    product_id: { type: 'string' },
     quantity: { type: 'integer', minimum: 1 },
+    cart_value: { type: 'number' },
+    guest_email: { type: 'string' },
+    user_agent: { type: 'string' },
+    page_path: { type: 'string' },
     metadata: { type: 'object' },
   },
   additionalProperties: false,

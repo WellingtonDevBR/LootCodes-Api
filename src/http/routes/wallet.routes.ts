@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { container } from 'tsyringe';
-import { UC_TOKENS } from '../../di/tokens.js';
+import { UC_TOKENS, TOKENS } from '../../di/tokens.js';
 import type { GetBalanceUseCase } from '../../core/use-cases/wallet/get-balance.use-case.js';
 import type { ListLedgerUseCase } from '../../core/use-cases/wallet/list-ledger.use-case.js';
 import type { GetOrderEarningsUseCase } from '../../core/use-cases/wallet/get-order-earnings.use-case.js';
@@ -67,6 +67,40 @@ export async function walletRoutes(app: FastifyInstance) {
       const uc = container.resolve<ClaimReviewRewardUseCase>(UC_TOKENS.ClaimReviewReward);
       const result = await uc.execute(authUser.id, request.body.review_id);
       return reply.send(result);
+    },
+  );
+
+  app.get(
+    '/purchase-reward-config',
+    async (_request, reply) => {
+      const repo = container.resolve<import('../../core/ports/wallet-repository.port.js').IWalletRepository>(TOKENS.WalletRepository);
+      const config = await repo.getPurchaseRewardConfig();
+      return reply.send(config);
+    },
+  );
+
+  app.post<{ Body: { variant_ids: string[] } }>(
+    '/variant-earn-bonuses',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['variant_ids'],
+          properties: {
+            variant_ids: {
+              type: 'array',
+              items: { type: 'string', format: 'uuid' },
+              maxItems: 100,
+            },
+          },
+          additionalProperties: false,
+        },
+      },
+    },
+    async (request, reply) => {
+      const repo = container.resolve<import('../../core/ports/wallet-repository.port.js').IWalletRepository>(TOKENS.WalletRepository);
+      const bonuses = await repo.getVariantEarnBonuses(request.body.variant_ids);
+      return reply.send(bonuses);
     },
   );
 }

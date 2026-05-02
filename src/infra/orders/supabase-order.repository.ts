@@ -2,7 +2,43 @@ import { injectable, inject } from 'tsyringe';
 import { TOKENS } from '../../di/tokens.js';
 import type { IDatabase } from '../../core/ports/database.port.js';
 import type { IOrderRepository } from '../../core/ports/order-repository.port.js';
-import type { Order, OrderItem, OrderDetail, PaginationParams } from '../../core/use-cases/orders/order.types.js';
+import type { Order, OrderItem, OrderDetail, PaginationParams, UserOrderWithRelations, OrderAccessResponse, OrderAccessTokenMetadata } from '../../core/use-cases/orders/order.types.js';
+
+const USER_ORDERS_SELECT = `
+  id, order_number, status, fulfillment_status, refund_status, refunded_at,
+  keys_revealed_at, total_amount, currency, created_at, promo_code_id,
+  discount_amount_cents,
+  order_items(
+    id, quantity, activation_instructions, variant_id, status,
+    created_at, unit_price,
+    products(name, platform),
+    product_variants(id,
+      variant_platforms(product_platforms(name)),
+      product_regions(name)
+    )
+  ),
+  product_keys(id, is_used, used_at, variant_id),
+  order_item_price_adjustments(
+    order_item_id, refund_cents, original_cents,
+    adjusted_cents, currency, created_at
+  )
+`.replace(/\s+/g, ' ').trim();
+
+const ORDER_ACCESS_SELECT = `
+  id, order_number, total_amount, currency, status, fulfillment_status,
+  refund_status, delivery_email, guest_email, customer_full_name,
+  user_id, created_at, keys_revealed_at, discount_amount_cents, promo_code_id,
+  order_items(
+    id, status, quantity, unit_price, total_price, activation_instructions,
+    products(id, name, slug, image_url, release_date, expected_delivery_date),
+    product_variants(
+      id, sku, face_value, release_date, activation_instructions,
+      product_regions(code, name),
+      variant_platforms(product_platforms(code, name, key_display_label, redemption_url_template))
+    )
+  ),
+  product_keys(id, variant_id, is_used, is_assigned, created_at, first_revealed_at, key_state)
+`.replace(/\s+/g, ' ').trim();
 
 @injectable()
 export class SupabaseOrderRepository implements IOrderRepository {
@@ -16,6 +52,15 @@ export class SupabaseOrderRepository implements IOrderRepository {
 
   async findByUserId(userId: string, pagination?: PaginationParams): Promise<Order[]> {
     return this.db.query<Order>('orders', {
+      eq: [['user_id', userId]],
+      order: { column: 'created_at', ascending: false },
+      limit: pagination?.limit ?? 50,
+    });
+  }
+
+  async findByUserIdWithRelations(userId: string, pagination?: PaginationParams): Promise<UserOrderWithRelations[]> {
+    return this.db.query<UserOrderWithRelations>('orders', {
+      select: USER_ORDERS_SELECT,
       eq: [['user_id', userId]],
       order: { column: 'created_at', ascending: false },
       limit: pagination?.limit ?? 50,
@@ -42,5 +87,45 @@ export class SupabaseOrderRepository implements IOrderRepository {
       order: { column: 'created_at', ascending: false },
       limit: 100,
     });
+  }
+
+  async getOrderAccessDetail(orderId: string): Promise<OrderAccessResponse | null> {
+    const rows = await this.db.query<OrderAccessResponse['order']>('orders', {
+      select: ORDER_ACCESS_SELECT,
+      eq: [['id', orderId]],
+      limit: 1,
+    });
+    const row = rows[0];
+    if (!row) return null;
+
+    const productKeys = (row as unknown as Record<string, unknown>).product_keys;
+    const order = { ...row };
+    delete (order as Record<string, unknown>).product_keys;
+
+    return {
+      order,
+      product_keys: (productKeys ?? []) as OrderAccessResponse['product_keys'],
+    };
+  }
+
+  async getKeyViewLogs(orderId: string, keyIds: string[]): Promise<Array<{ key_id: string; viewed_at: string }>> {
+    if (!keyIds.length) return [];
+    return this.db.query<{ key_id: string; viewed_at: string }>('key_view_logs', {
+      select: 'key_id, viewed_at',
+      eq: [['order_id', orderId]],
+      in: [['key_id', keyIds]],
+    });
+  }
+
+  async getOrderAccessTokenMetadata(token: string, orderId: string): Promise<OrderAccessTokenMetadata | null> {
+    try {
+      const result = await this.db.rpc<OrderAccessTokenMetadata>('get_order_access_token_metadata', {
+        p_token: token,
+        p_order_id: orderId,
+      });
+      return result ?? null;
+    } catch {
+      return null;
+    }
   }
 }

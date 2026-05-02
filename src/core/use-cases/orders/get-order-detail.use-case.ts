@@ -1,7 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { TOKENS } from '../../../di/tokens.js';
 import type { IOrderRepository } from '../../ports/order-repository.port.js';
-import type { OrderDetail } from './order.types.js';
+import type { OrderDetail, OrderAccessResponse } from './order.types.js';
 import { NotFoundError, ForbiddenError } from '../../errors/domain-errors.js';
 import { createLogger } from '../../../shared/logger.js';
 
@@ -21,6 +21,20 @@ export class GetOrderDetailUseCase {
 
     if (detail.order.user_id !== userId) {
       logger.warn('Order detail access denied — user mismatch', { orderId, userId });
+      throw new ForbiddenError('You do not have access to this order');
+    }
+
+    return detail;
+  }
+
+  async executeFullAccess(orderId: string, userId: string): Promise<OrderAccessResponse> {
+    const detail = await this.orderRepo.getOrderAccessDetail(orderId);
+    if (!detail) {
+      throw new NotFoundError('Order not found');
+    }
+
+    if (detail.order.user_id !== userId) {
+      logger.warn('Order access denied — user mismatch', { orderId, userId });
       throw new ForbiddenError('You do not have access to this order');
     }
 

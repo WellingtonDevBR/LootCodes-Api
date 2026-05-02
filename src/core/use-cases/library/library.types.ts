@@ -25,3 +25,21 @@ export interface UpdateLibraryEntryDto {
   user_rating?: number;
   notes?: string;
 }
+
+export interface LibraryProductDetails {
+  id: string;
+  name: string;
+  slug: string;
+  image_url: string | null;
+  face_value?: string | null;
+  in_stock?: boolean | null;
+  release_date?: string | null;
+  product_variants?: Array<{
+    id: string;
+    price_usd: number;
+    retail_price_usd?: number | null;
+    region_id: string;
+    product_platforms: { name: string; code: string } | null;
+    product_regions: { name: string; code: string } | null;
+  }>;
+}

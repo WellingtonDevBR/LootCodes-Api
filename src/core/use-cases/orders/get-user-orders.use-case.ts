@@ -1,7 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { TOKENS } from '../../../di/tokens.js';
 import type { IOrderRepository } from '../../ports/order-repository.port.js';
-import type { Order, PaginationParams } from './order.types.js';
+import type { UserOrderWithRelations, PaginationParams } from './order.types.js';
 
 @injectable()
 export class GetUserOrdersUseCase {
@@ -9,7 +9,7 @@ export class GetUserOrdersUseCase {
     @inject(TOKENS.OrderRepository) private orderRepo: IOrderRepository,
   ) {}
 
-  async execute(userId: string, pagination?: PaginationParams): Promise<Order[]> {
-    return this.orderRepo.findByUserId(userId, pagination);
+  async execute(userId: string, pagination?: PaginationParams): Promise<UserOrderWithRelations[]> {
+    return this.orderRepo.findByUserIdWithRelations(userId, pagination);
   }
 }

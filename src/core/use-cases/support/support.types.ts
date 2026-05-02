@@ -4,11 +4,20 @@ export interface SupportTicket {
   user_id?: string;
   guest_email?: string;
   subject: string;
+  description?: string | null;
+  ticket_type?: string | null;
   status: string;
   priority?: string;
-  order_id?: string;
+  order_id?: string | null;
+  order_item_id?: string | null;
+  product_key_id?: string | null;
   created_at?: string;
   updated_at?: string;
+  resolved_at?: string | null;
+}
+
+export interface SupportTicketWithMessages extends SupportTicket {
+  ticket_messages?: Array<{ created_at: string }>;
 }
 
 export interface TicketMessage {

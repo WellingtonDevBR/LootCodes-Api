@@ -144,6 +144,7 @@ export const UC_TOKENS = {
   SetLibraryStatus: Symbol.for('SetLibraryStatusUseCase'),
   RemoveFromLibrary: Symbol.for('RemoveFromLibraryUseCase'),
   UpdateLibraryEntry: Symbol.for('UpdateLibraryEntryUseCase'),
+  GetLibraryProductDetails: Symbol.for('GetLibraryProductDetailsUseCase'),
 
   // Auth use cases
   HandleAuth: Symbol.for('HandleAuthUseCase'),

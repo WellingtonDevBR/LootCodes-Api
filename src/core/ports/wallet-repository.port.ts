@@ -5,4 +5,6 @@ export interface IWalletRepository {
   listLedger(userId: string, params?: LedgerPaginationParams): Promise<{ entries: WalletLedgerEntry[]; nextCursor: string | null }>;
   getOrderEarnings(userId: string, orderIds: string[]): Promise<OrderEarnings[]>;
   claimReviewReward(userId: string, reviewId: string): Promise<{ credited: boolean; amount_cents: number }>;
+  getPurchaseRewardConfig(): Promise<unknown>;
+  getVariantEarnBonuses(variantIds: string[]): Promise<unknown>;
 }

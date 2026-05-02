@@ -7,7 +7,7 @@ import type { UpdateSessionOutcomeUseCase } from '../../core/use-cases/analytics
 import type { TrackProductViewDurationUseCase } from '../../core/use-cases/analytics/track-product-view-duration.use-case.js';
 import type { TrackSearchEventUseCase } from '../../core/use-cases/analytics/track-search-event.use-case.js';
 import type { GeolocateUseCase } from '../../core/use-cases/analytics/geolocate.use-case.js';
-import type { CartEvent, SessionOutcomeDto, ProductViewDurationDto, SearchEventDto, BatchedEventEnvelope } from '../../core/use-cases/analytics/analytics.types.js';
+import type { CartEvent, SessionOutcomeDto, ProductViewDurationDto, SearchEventDto, BatchedEventEnvelope, SessionUpsertDto } from '../../core/use-cases/analytics/analytics.types.js';
 import { buildRequestContext } from '../middleware/request-context.js';
 import {
   batchEventsBodySchema,
@@ -108,6 +108,48 @@ export async function analyticsRoutes(app: FastifyInstance) {
       const uc = container.resolve<GeolocateUseCase>(UC_TOKENS.Geolocate);
       const result = await uc.execute(reqCtx.clientIP);
       return reply.send(result);
+    },
+  );
+
+  app.post<{ Body: SessionUpsertDto }>(
+    '/session-upsert',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['session_id'],
+          properties: {
+            session_id: { type: 'string', minLength: 1 },
+            user_id: { type: 'string' },
+            page_path: { type: 'string' },
+            referrer: { type: 'string' },
+            traffic_source: { type: 'string' },
+            utm_source: { type: 'string' },
+            utm_medium: { type: 'string' },
+            utm_campaign: { type: 'string' },
+            device_type: { type: 'string' },
+            browser: { type: 'string' },
+            os: { type: 'string' },
+            screen_resolution: { type: 'string' },
+            language: { type: 'string' },
+            country_code: { type: 'string' },
+            user_agent: { type: 'string' },
+            merge_anonymous: { type: 'boolean' },
+            auto_consolidate: { type: 'boolean' },
+          },
+          additionalProperties: false,
+        },
+      },
+    },
+    async (request, reply) => {
+      const uc = container.resolve<TrackBatchUseCase>(UC_TOKENS.TrackBatch);
+      const { session_id, user_id, ...rest } = request.body;
+      await uc.execute(
+        { events: [{ action: 'session-upsert', payload: { ...rest, session_id, user_id } }] },
+        session_id,
+        user_id,
+      );
+      return reply.code(204).send();
     },
   );
 }

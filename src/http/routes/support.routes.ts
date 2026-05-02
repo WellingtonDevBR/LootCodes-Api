@@ -77,7 +77,7 @@ export async function supportRoutes(app: FastifyInstance) {
     },
   );
 
-  app.get(
+  app.get<{ Querystring: { include?: string } }>(
     '/',
     {
       preHandler: [authGuard],
@@ -85,6 +85,12 @@ export async function supportRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const uc = container.resolve<GetUserTicketsUseCase>(UC_TOKENS.GetUserTickets);
       const user = getAuthUser(request);
+      const includeMessages = request.query.include === 'messages';
+
+      if (includeMessages) {
+        const tickets = await uc.executeWithMessages(user.id);
+        return reply.send({ tickets });
+      }
 
       const tickets = await uc.execute(user.id);
       return reply.send({ tickets });

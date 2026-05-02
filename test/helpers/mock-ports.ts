@@ -53,14 +53,14 @@ import type { Category, LocalizedPrice, ExcludedCountry, RestrictedVariant, Rest
 import type { SearchResult } from '../../src/core/use-cases/search/search.types.js';
 
 import type { UserProfile, UpsertProfileDto, UserSession, UpsertSessionDto } from '../../src/core/use-cases/profile/profile.types.js';
-import type { Order, OrderItem, OrderDetail, ProductKey, KeyViewLog, KeyAccessAttemptLog, OrderAccessToken, PaginationParams } from '../../src/core/use-cases/orders/order.types.js';
+import type { Order, OrderItem, OrderDetail, ProductKey, KeyViewLog, KeyAccessAttemptLog, OrderAccessToken, PaginationParams, UserOrderWithRelations } from '../../src/core/use-cases/orders/order.types.js';
 import type { CartItem, PromoValidationResult, StockCheckResult as CheckoutStockResult } from '../../src/core/use-cases/checkout/checkout.types.js';
-import type { SupportTicket, TicketMessage, TicketDetail, CreateTicketDto, TicketFeedbackDto } from '../../src/core/use-cases/support/support.types.js';
-import type { LibraryEntry, SetLibraryStatusDto, UpdateLibraryEntryDto } from '../../src/core/use-cases/library/library.types.js';
+import type { SupportTicket, SupportTicketWithMessages, TicketMessage, TicketDetail, CreateTicketDto, TicketFeedbackDto } from '../../src/core/use-cases/support/support.types.js';
+import type { LibraryEntry, LibraryProductDetails, SetLibraryStatusDto, UpdateLibraryEntryDto } from '../../src/core/use-cases/library/library.types.js';
 import type { Notification, NotificationPreferences, UpdatePreferencesDto } from '../../src/core/use-cases/notifications/notification.types.js';
 import type { Review, ProductRating, CreateReviewDto, ReviewEligibility, ReviewPaginationParams } from '../../src/core/use-cases/reviews/review.types.js';
 import type { ProductPageData, Product, ProductVariant, GalleryItem, FeaturedProduct, StockCheckItem, StockCheckResult, Platform, Region, Genre, FAQ } from '../../src/core/use-cases/products/product.types.js';
-import type { PageViewEvent, ActivityEvent, CartEvent, SessionOutcomeDto, GeoLookupResult, ProductViewDurationDto, SearchEventDto } from '../../src/core/use-cases/analytics/analytics.types.js';
+import type { PageViewEvent, ActivityEvent, CartEvent, SessionOutcomeDto, SessionUpsertDto, GeoLookupResult, ProductViewDurationDto, SearchEventDto } from '../../src/core/use-cases/analytics/analytics.types.js';
 import type { WalletBalance, WalletLedgerEntry, LedgerPaginationParams, OrderEarnings } from '../../src/core/use-cases/wallet/wallet.types.js';
 import type { ReferralMe, ReferralListPage, ReferralLeaderboardEntry, ListReferralsParams, GetLeaderboardParams, OpenDisputeParams, OpenDisputeResult } from '../../src/core/use-cases/referrals/referral.types.js';
 import type { NewsletterSubscribeDto, NewsletterResult } from '../../src/core/use-cases/newsletter/newsletter.types.js';
@@ -210,6 +210,10 @@ export class MockOrderRepository implements IOrderRepository {
     return order ? { order, items: [] } : null;
   }
   async findByUserForSupport(userId: string): Promise<Order[]> { return this.orders.filter(o => o.user_id === userId); }
+  async findByUserIdWithRelations(userId: string, pagination?: PaginationParams): Promise<UserOrderWithRelations[]> { return []; }
+  async getOrderAccessDetail(_orderId: string): Promise<import('../../src/core/use-cases/orders/order.types.js').OrderAccessResponse | null> { return null; }
+  async getKeyViewLogs(_orderId: string, _keyIds: string[]): Promise<Array<{ key_id: string; viewed_at: string }>> { return []; }
+  async getOrderAccessTokenMetadata(_token: string, _orderId: string): Promise<import('../../src/core/use-cases/orders/order.types.js').OrderAccessTokenMetadata | null> { return null; }
 }
 
 export class MockProductKeyRepository implements IProductKeyRepository {
@@ -304,6 +308,7 @@ export class MockSupportTicketRepository implements ISupportTicketRepository {
   }
   async findByNumber(ticketNumber: string): Promise<TicketDetail | null> { return this.tickets.find(t => t.ticket.ticket_number === ticketNumber) ?? null; }
   async findByUserId(userId: string): Promise<SupportTicket[]> { return this.tickets.filter(t => t.ticket.user_id === userId).map(t => t.ticket); }
+  async findByUserIdWithMessages(userId: string): Promise<SupportTicketWithMessages[]> { return this.tickets.filter(t => t.ticket.user_id === userId).map(t => ({ ...t.ticket, ticket_messages: t.messages.map(m => ({ created_at: m.created_at! })) })); }
   async addMessage(ticketId: string, message: Omit<TicketMessage, 'id' | 'created_at'>): Promise<TicketMessage> {
     const msg: TicketMessage = { ...message, id: `msg-${Date.now()}`, created_at: new Date().toISOString() };
     const detail = this.tickets.find(t => t.ticket.id === ticketId);
@@ -335,6 +340,7 @@ export class MockUserLibraryRepository implements IUserLibraryRepository {
   }
   async remove(userId: string, productId: string): Promise<void> { this.entries = this.entries.filter(e => !(e.user_id === userId && e.product_id === productId)); }
   async update(_userId: string, _productId: string, _data: UpdateLibraryEntryDto): Promise<void> {}
+  async getProductDetails(_productIds: string[]): Promise<LibraryProductDetails[]> { return []; }
 }
 
 // ─── Notifications ───────────────────────────────────────────────
@@ -448,6 +454,7 @@ export class MockAnalyticsRepository implements IAnalyticsRepository {
   async updateSessionOutcome(dto: SessionOutcomeDto): Promise<void> { this.outcomes.push(dto); }
   async trackProductViewDuration(_data: ProductViewDurationDto & { user_id?: string }): Promise<void> { return; }
   async trackSearchEvent(_data: SearchEventDto): Promise<void> { return; }
+  async upsertSession(_dto: SessionUpsertDto): Promise<void> { return; }
 }
 
 export class MockGeoService implements IGeoService {
@@ -471,6 +478,8 @@ export class MockWalletRepository implements IWalletRepository {
   async claimReviewReward(_userId: string, _reviewId: string): Promise<{ credited: boolean; amount_cents: number }> {
     return { credited: true, amount_cents: 100 };
   }
+  async getPurchaseRewardConfig(): Promise<unknown> { return {}; }
+  async getVariantEarnBonuses(_variantIds: string[]): Promise<unknown> { return []; }
 }
 
 // ─── Referrals ───────────────────────────────────────────────────
