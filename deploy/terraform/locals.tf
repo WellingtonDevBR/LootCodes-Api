@@ -38,10 +38,19 @@ locals {
 
   sorted_alb_azs = sort(keys(local.public_subnets_by_az))
 
+  # EC2 instance AZ (ALB must enable this AZ or targets stay Target.NotInUse).
+  instance_az = data.aws_subnet.vpc_subnet[local.subnet_id].availability_zone
+
+  alb_azs_other = [
+    for az in local.sorted_alb_azs : az if az != local.instance_az
+  ]
+
+  alb_azs_ordered = concat([local.instance_az], local.alb_azs_other)
+
   alb_azs_for_lb = (
-    length(local.sorted_alb_azs) <= var.alb_availability_zone_count
-    ? local.sorted_alb_azs
-    : slice(local.sorted_alb_azs, 0, var.alb_availability_zone_count)
+    length(local.alb_azs_ordered) <= var.alb_availability_zone_count
+    ? local.alb_azs_ordered
+    : slice(local.alb_azs_ordered, 0, var.alb_availability_zone_count)
   )
 
   alb_subnet_ids = var.enable_https_alb ? [

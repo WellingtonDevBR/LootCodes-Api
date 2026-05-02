@@ -27,6 +27,16 @@ check "https_alb_requires_two_public_azs" {
   }
 }
 
+check "https_alb_instance_in_public_az" {
+  assert {
+    condition = (
+      !var.enable_https_alb ||
+      contains(keys(local.public_subnets_by_az), local.instance_az)
+    )
+    error_message = "enable_https_alb requires the API instance subnet to sit in an AZ that has at least one map_public_ip_on_launch subnet (same AZ must be enabled on the internet-facing ALB)."
+  }
+}
+
 check "ec2_public_subnet_when_associate_public_ip" {
   assert {
     condition = (

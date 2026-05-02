@@ -60,7 +60,7 @@ variable "allocate_elastic_ip_alongside_alb" {
 
 variable "alb_availability_zone_count" {
   type        = number
-  description = "How many AZs the internet-facing ALB uses (min 2). Each AZ adds one AWS-managed public address for the ALB. Use 2 for the usual HA + fewer console 'Elastic IP' rows."
+  description = "How many AZs the internet-facing ALB uses (min 2). Always includes the API instance AZ first, then other public AZs. Each AZ adds AWS-managed ALB addresses."
   default     = 2
 
   validation {
