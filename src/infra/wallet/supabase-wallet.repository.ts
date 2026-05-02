@@ -7,35 +7,56 @@ import { createLogger } from '../../shared/logger.js';
 
 const logger = createLogger('supabase-wallet-repository');
 
+const ZERO_BALANCE: WalletBalance = {
+  balance_cents: 0,
+  lifetime_credited_cents: 0,
+  lifetime_redeemed_cents: 0,
+  expiring_soon_cents: 0,
+  next_expiry: null,
+};
+
 @injectable()
 export class SupabaseWalletRepository implements IWalletRepository {
   constructor(@inject(TOKENS.Database) private db: IDatabase) {}
 
   async getBalance(userId: string): Promise<WalletBalance> {
-    return this.db.rpc<WalletBalance>('get_wallet_balance', {
-      p_user_id: userId,
-    });
+    try {
+      const result = await this.db.rpc<WalletBalance | WalletBalance[]>('get_wallet_balance_for_user', {
+        p_user_id: userId,
+      });
+      const row = Array.isArray(result) ? result[0] : result;
+      return row ?? ZERO_BALANCE;
+    } catch (err) {
+      logger.warn('get_wallet_balance_for_user failed, returning zero balance', { userId, error: String(err) });
+      return ZERO_BALANCE;
+    }
   }
 
   async listLedger(userId: string, params?: LedgerPaginationParams): Promise<{ entries: WalletLedgerEntry[]; nextCursor: string | null }> {
-    const result = await this.db.rpc<{ entries: WalletLedgerEntry[]; next_cursor: string | null }>('list_wallet_ledger', {
+    const limit = Math.max(1, Math.min(params?.limit ?? 20, 100));
+
+    const entries = await this.db.rpc<WalletLedgerEntry[]>('get_wallet_ledger_for_user', {
       p_user_id: userId,
-      p_limit: params?.limit ?? 20,
+      p_limit: limit + 1,
       p_before: params?.before ?? null,
     });
 
-    return {
-      entries: result.entries,
-      nextCursor: result.next_cursor,
-    };
+    const rows = Array.isArray(entries) ? entries : [];
+    let nextCursor: string | null = null;
+    if (rows.length > limit) {
+      const last = rows.pop()!;
+      nextCursor = last.created_at ?? null;
+    }
+
+    return { entries: rows, nextCursor };
   }
 
   async getOrderEarnings(userId: string, orderIds: string[]): Promise<OrderEarnings[]> {
     logger.info('Fetching order earnings from DB', { userId, orderCount: orderIds.length });
-    return this.db.rpc<OrderEarnings[]>('get_order_earnings', {
-      p_user_id: userId,
+    const result = await this.db.rpc<OrderEarnings[]>('get_order_earnings', {
       p_order_ids: orderIds,
     });
+    return Array.isArray(result) ? result : [];
   }
 
   async claimReviewReward(userId: string, reviewId: string): Promise<{ credited: boolean; amount_cents: number }> {

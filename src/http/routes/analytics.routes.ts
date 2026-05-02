@@ -27,8 +27,13 @@ export async function analyticsRoutes(app: FastifyInstance) {
       const { authUser } = request as unknown as OptionalAuthRequest;
       const { session_id, events } = request.body;
       const uc = container.resolve<TrackBatchUseCase>(UC_TOKENS.TrackBatch);
-      const processed = await uc.execute({ events }, session_id, authUser?.id);
-      return reply.send({ success: true, processed });
+      try {
+        const processed = await uc.execute({ events }, session_id ?? '', authUser?.id);
+        return reply.send({ success: true, processed });
+      } catch (err) {
+        request.log.warn({ err }, 'Analytics batch processing error');
+        return reply.send({ success: true, processed: 0 });
+      }
     },
   );
 

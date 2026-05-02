@@ -12,6 +12,10 @@ export interface ActivityEvent {
   event_type: string;
   element_id?: string;
   metadata?: Record<string, unknown>;
+  page_path?: string;
+  element_selector?: string;
+  mouse_position?: string;
+  user_agent?: string;
   timestamp?: string;
 }
 

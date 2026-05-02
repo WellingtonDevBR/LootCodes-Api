@@ -13,27 +13,36 @@ export class SupabaseAnalyticsRepository implements IAnalyticsRepository {
 
   async insertPageViews(events: PageViewEvent[]): Promise<void> {
     for (const event of events) {
-      await this.db.insert('page_views', {
-        session_id: event.session_id,
-        user_id: event.user_id,
-        path: event.path,
-        referrer: event.referrer,
-        timestamp: event.timestamp,
-      });
+      try {
+        await this.db.insert('page_views', {
+          session_id: event.session_id,
+          user_id: event.user_id,
+          page_path: event.path,
+          referrer: event.referrer,
+        });
+      } catch (err) {
+        logger.warn('Page view insert failed (FK or constraint)', { sessionId: event.session_id, error: String(err) });
+      }
     }
     logger.debug('Page views inserted', { count: events.length });
   }
 
   async insertActivityEvents(events: ActivityEvent[]): Promise<void> {
     for (const event of events) {
-      await this.db.insert('user_activity_events', {
-        session_id: event.session_id,
-        user_id: event.user_id,
-        event_type: event.event_type,
-        element_id: event.element_id,
-        metadata: event.metadata,
-        timestamp: event.timestamp,
-      });
+      try {
+        await this.db.insert('user_activity_events', {
+          session_id: event.session_id,
+          user_id: event.user_id,
+          event_type: event.event_type,
+          event_data: event.metadata ?? {},
+          page_path: event.page_path,
+          element_selector: event.element_selector,
+          mouse_position: event.mouse_position,
+          user_agent: event.user_agent,
+        });
+      } catch (err) {
+        logger.warn('Activity event insert failed (FK or constraint)', { sessionId: event.session_id, error: String(err) });
+      }
     }
     logger.debug('Activity events inserted', { count: events.length });
   }
@@ -61,10 +70,14 @@ export class SupabaseAnalyticsRepository implements IAnalyticsRepository {
   }
 
   async updateSessionOutcome(dto: SessionOutcomeDto): Promise<void> {
-    await this.db.update('user_sessions', { id: dto.session_id }, {
-      final_outcome: dto.outcome,
-      conversion_value: dto.conversion_value,
-    });
+    try {
+      await this.db.update('user_sessions', { session_id: dto.session_id }, {
+        final_outcome: dto.outcome,
+        conversion_value: dto.conversion_value,
+      });
+    } catch (err) {
+      logger.warn('Session outcome update failed', { sessionId: dto.session_id, error: String(err) });
+    }
   }
 
   async trackProductViewDuration(data: ProductViewDurationDto & { user_id?: string }): Promise<void> {

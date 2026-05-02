@@ -47,7 +47,7 @@ export class TrackBatchUseCase {
           pageViews.push({
             session_id: resolvedSessionId,
             user_id: resolvedUserId,
-            path: payload.path as string ?? '',
+            path: (payload.page_path ?? payload.path) as string ?? '',
             referrer: payload.referrer as string | undefined,
             timestamp: payload.timestamp as string | undefined,
           });
@@ -60,7 +60,11 @@ export class TrackBatchUseCase {
             user_id: resolvedUserId,
             event_type: payload.event_type as string ?? '',
             element_id: payload.element_id as string | undefined,
-            metadata: payload.metadata as Record<string, unknown> | undefined,
+            metadata: (payload.event_data ?? payload.metadata) as Record<string, unknown> | undefined,
+            page_path: payload.page_path as string | undefined,
+            element_selector: payload.element_selector as string | undefined,
+            mouse_position: payload.mouse_position as string | undefined,
+            user_agent: payload.user_agent as string | undefined,
             timestamp: payload.timestamp as string | undefined,
           });
           processed++;
@@ -91,7 +95,7 @@ export class TrackBatchUseCase {
         case 'session-outcome':
           await this.analyticsRepo.updateSessionOutcome({
             session_id: resolvedSessionId,
-            outcome: payload.outcome as string ?? '',
+            outcome: (payload.final_outcome ?? payload.outcome) as string ?? '',
             conversion_value: payload.conversion_value as number | undefined,
           } as SessionOutcomeDto);
           processed++;
