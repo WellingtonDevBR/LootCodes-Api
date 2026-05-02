@@ -25,7 +25,7 @@ resource "aws_security_group" "api" {
   dynamic "ingress" {
     for_each = length(local.api_ingress) > 0 ? [1] : []
     content {
-      description = "Fastify API port 3000 to container 3001"
+      description = "Fastify API port 3000 (host and container)"
       from_port   = 3000
       to_port     = 3000
       protocol    = "tcp"

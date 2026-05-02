@@ -24,7 +24,7 @@ Health: `GET /health`
 
 ## Deploy (AWS)
 
-- **Docker:** see `Dockerfile` and `docker-compose.prod.yml` (host **3000** → container **3001**).
+- **Docker:** see `Dockerfile` and `docker-compose.prod.yml` (API on **:3000** host and container).
 - **Terraform EC2:** `deploy/terraform/`
 - **Step-by-step:** `deploy/EC2.md`
 

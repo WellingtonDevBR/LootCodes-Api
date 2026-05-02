@@ -2,7 +2,7 @@
 
 This walks you from zero to a working API on EC2 at `**http://YOUR_PUBLIC_IP:3000**` (health check: `/health`).
 
-**Why port 3000 on the host?** The Node app still listens on **3001 inside the container** (default `PORT`). Docker maps **host 3000 → container 3001**, so you do not change `PORT` in `.env` unless you want the app to listen on a different port internally.
+**Port 3000:** The app and Docker **both** use **3000** (see `PORT` default in `src/config/env.ts`, `docker-compose.prod.yml`, and `Dockerfile`). Security group opens **3000** to your allowed CIDRs.
 
 ---
 
@@ -164,7 +164,7 @@ It must publish **3000** on the host (already set in repo):
 
 ```yaml
 ports:
-  - "3000:3001"
+  - "3000:3000"
 ```
 
 ---
@@ -181,7 +181,7 @@ scp -i your-key.pem .env.production ec2-user@YOUR_PUBLIC_IP:/opt/lootcodes-api/.
 
 Or with SSM + base64, editor, etc. The path must be `**/opt/lootcodes-api/.env**` next to `docker-compose.prod.yml`.
 
-**PORT in `.env`:** leave `**PORT=3001`** (or omit it for default). The app listens on 3001 **inside** the container; Docker maps **3000 on the host** to that port.
+**PORT in `.env`:** use `**PORT=3000**` (or omit for default). Host and container both expose **3000**.
 
 ---
 
