@@ -24,6 +24,8 @@ enable_unrestricted_api_ingress = false
 # create_alb_https_listener      = false   # set true after ACM validation CNAME + api hostname point at ALB
 # When ALB is on, port 3000 is only open to the ALB — no need for wide api_ingress_cidr_blocks.
 
+# allocate_elastic_ip = true   # one tagged EC2 Elastic IP; ALB does not use EIPs
+
 associate_public_ip = true
 deploy_directory    = "/opt/lootcodes-api"
 

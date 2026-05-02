@@ -46,6 +46,12 @@ variable "associate_public_ip" {
   default     = true
 }
 
+variable "allocate_elastic_ip" {
+  type        = bool
+  description = "Create one tagged Elastic IP (Name = project-environment-ec2-eip) and attach it to the API EC2 instance. Does not apply to the ALB — ALBs use AWS-managed IPs; use alb_dns_name or Route53."
+  default     = true
+}
+
 variable "api_ingress_cidr_blocks" {
   type        = list(string)
   description = "CIDRs allowed to reach the API on port 3000. Use your IP /32 (e.g. ['203.0.113.10/32']) and/or a load balancer subnet. Avoid 0.0.0.0/0 unless you accept the risk."

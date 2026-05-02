@@ -24,7 +24,9 @@ Terraform in **`backend/deploy/terraform`** creates a **dedicated** API instance
 - **IAM instance profile**: SSM (`AmazonSSMManagedInstanceCore`) + **ECR pull** for your repository (no blanket admin).
 - **EC2 key pair**: **`ec2_key_pair_name`** defaults to **`Eneba`** (use with your existing **`Eneba.pem`** — the `.pem` stays local; Terraform only references the key name already registered under **EC2 → Key pairs**).  
 - **Security group**: **HTTPS egress**; **port 3000** from `api_ingress_cidr_blocks` when **`enable_https_alb`** is false, or **only from the ALB** when **`enable_https_alb`** is true. **No SSH** on port 22 unless you set `ssh_ingress_cidr_blocks` (SSM still works without SSH).
+- **Optional Elastic IP** (`allocate_elastic_ip`, default true): one IPv4 address tagged **`Name = {project}-{environment}-ec2-eip`** (e.g. `lootcodes-api-production-ec2-eip`) associated to the **EC2** instance. **Application Load Balancers do not use customer Elastic IPs**; they use AWS-managed addresses—expose the ALB with **`alb_dns_name`** or a Route53 alias. To remove stray manually created EIPs, run **`deploy/terraform/cleanup-extra-eips.sh <instance-id>`** (dry-run first; then add **`--execute`**).
 - **Optional ALB** (`enable_https_alb`): ACM certificate (DNS validation), internet-facing ALB in **two** public AZs, **443** forwards to the instance **:3000**, **80** **301** redirects to **HTTPS**. If **`route53_zone_id`** is set, Terraform creates validation records and can create an alias; if it is **empty** (DNS at your registrar / Cloudflare), add the **CNAME** from **`terraform output acm_dns_validation_records`**, then set **`api_fqdn`** as a **CNAME** (or equivalent) to **`alb_dns_name`**. Requires **`api_fqdn`**, a VPC with at least **two** public subnets in different AZs (see `checks.tf`), and a fresh AWS CLI session for **`terraform apply`** if you use **`aws login`** (ACM validation can take several minutes).
+- **Hardening**: **IMDSv2 required**, **encrypted gp3** root volume, **detailed monitoring** on.
 
 **HTTPS ALB — DNS at Cloudflare / registrar (no Route53 zone in AWS)**
 
@@ -42,7 +44,6 @@ Terraform in **`backend/deploy/terraform`** creates a **dedicated** API instance
 4. Point **`api_fqdn`** at the load balancer: **CNAME** `api` → **`alb_dns_name`** output (e.g. `xxx.us-east-1.elb.amazonaws.com`). Remove any **A** record that pointed at the EC2 public IP.
 5. When ACM is **ISSUED** (AWS Console → Certificate Manager), set **`create_alb_https_listener = true`** and run **`terraform apply`** to create **:443** and complete **`aws_acm_certificate_validation`** if needed.
 6. Set **`alb_redirect_http_to_https = true`** and apply so port **80** returns **301** to HTTPS.
-- **Hardening**: **IMDSv2 required**, **encrypted gp3** root volume, **detailed monitoring** on.
 
 **Greenfield (new server)**
 

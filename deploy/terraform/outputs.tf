@@ -4,8 +4,13 @@ output "instance_id" {
 }
 
 output "public_ip" {
-  description = "Public IPv4 (if associate_public_ip is true and subnet routes to IGW)."
-  value       = aws_instance.api.public_ip
+  description = "Effective public IPv4 for the API instance (Elastic IP if allocate_elastic_ip, else ephemeral)."
+  value       = length(aws_eip.api) > 0 ? aws_eip.api[0].public_ip : aws_instance.api.public_ip
+}
+
+output "ec2_elastic_ip_allocation_id" {
+  description = "EC2 Elastic IP allocation ID when allocate_elastic_ip is true."
+  value       = try(aws_eip.api[0].id, null)
 }
 
 output "private_ip" {
@@ -15,7 +20,7 @@ output "private_ip" {
 output "api_url_example" {
   description = "Health check URL (use after deploy and .env)."
   value = (
-    !var.enable_https_alb ? "http://${aws_instance.api.public_ip}:3000/health" : (
+    !var.enable_https_alb ? "http://${length(aws_eip.api) > 0 ? aws_eip.api[0].public_ip : aws_instance.api.public_ip}:3000/health" : (
       var.create_alb_https_listener ? "https://${var.api_fqdn}/health" : "http://${aws_lb.api[0].dns_name}/health"
     )
   )
