@@ -7,7 +7,7 @@ import { createLogger } from '../../shared/logger.js';
 
 const logger = createLogger('ip-blocklist-hook');
 
-const EXEMPT_PREFIXES = ['/health', '/api/webhooks'];
+const EXEMPT_PREFIXES = ['/health', '/webhooks'];
 
 export function registerIpBlocklistHook(app: FastifyInstance) {
   app.addHook('onRequest', async (request, reply) => {
