@@ -44,8 +44,7 @@ export class SupabaseRateLimiterAdapter implements IRateLimiter {
       p_limit: params.limit,
       p_window_minutes: params.windowMinutes,
       p_success: true,
-      p_metadata: {},
-      p_ip_context: params.ipAddress,
+      p_ip_address_context: params.ipAddress,
     });
 
     return { allowed: result.allowed };
