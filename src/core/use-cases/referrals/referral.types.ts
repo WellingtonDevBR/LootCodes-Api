@@ -21,7 +21,12 @@ export interface ReferralMe {
   referral_code: string | null;
   can_refer: boolean;
   stats: ReferralStats;
-  referred_by: string | null;
+  referred_by: {
+    code: string | null;
+    display_name: string;
+    welcome_cents_pending: number;
+    status: string;
+  } | null;
   reward_policy: ReferralRewardPolicy;
 }
 

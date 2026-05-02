@@ -47,9 +47,17 @@ export class SupabaseProductRepository implements IProductRepository {
   }
 
   async batchCheckStock(items: StockCheckItem[]): Promise<StockCheckResult[]> {
-    return this.db.rpc<StockCheckResult[]>('check_cart_stock', {
-      p_items: items,
+    const variantIds = items.map((i) => i.variant_id);
+    const quantities = items.map((i) => i.quantity);
+    const rows = await this.db.rpc<{ variant_id: string; in_stock: boolean }[]>('check_cart_stock', {
+      p_variant_ids: variantIds,
+      p_quantities: quantities,
     });
+    return (Array.isArray(rows) ? rows : []).map((r) => ({
+      variant_id: r.variant_id,
+      available: r.in_stock,
+      available_quantity: r.in_stock ? 999 : 0,
+    }));
   }
 
   async getGallery(productId: string): Promise<GalleryItem[]> {

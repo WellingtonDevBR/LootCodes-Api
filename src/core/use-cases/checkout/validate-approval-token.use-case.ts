@@ -18,13 +18,9 @@ export class ValidateApprovalTokenUseCase {
   ) {}
 
   async execute(holdId: string, token: string): Promise<ApprovalTokenResult | null> {
-    const result = await this.db.query<ApprovalTokenResult>(
-      `SELECT id, guest_email, approval_token_expires, approval_token_used, status, pending_order_data
-       FROM security_holds
-       WHERE id = $1 AND approval_token = $2 AND status = 'approved'
-       LIMIT 1`,
-      [holdId, token],
-    );
-    return result[0] ?? null;
+    return this.db.queryOne<ApprovalTokenResult>('security_holds', {
+      select: 'id, guest_email, approval_token_expires, approval_token_used, status, pending_order_data',
+      eq: [['id', holdId], ['approval_token', token], ['status', 'approved']],
+    });
   }
 }

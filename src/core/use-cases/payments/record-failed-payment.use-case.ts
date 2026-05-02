@@ -23,24 +23,18 @@ export class RecordFailedPaymentUseCase {
   ) {}
 
   async execute(dto: RecordFailedPaymentDto): Promise<void> {
-    await this.db.query(
-      `INSERT INTO payment_attempts (
-        payment_intent_id, amount, currency, decline_code, failure_reason,
-        card_brand, card_last4, card_country, user_id, guest_email, payment_method_data
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-      [
-        dto.payment_intent_id,
-        dto.amount,
-        dto.currency,
-        dto.decline_code ?? null,
-        dto.failure_reason,
-        dto.card_brand ?? null,
-        dto.card_last4 ?? null,
-        dto.card_country ?? null,
-        dto.user_id ?? null,
-        dto.guest_email ?? null,
-        JSON.stringify(dto.payment_method_data ?? {}),
-      ],
-    );
+    await this.db.insert('payment_attempts', {
+      payment_intent_id: dto.payment_intent_id,
+      amount: dto.amount,
+      currency: dto.currency,
+      decline_code: dto.decline_code ?? null,
+      failure_reason: dto.failure_reason,
+      card_brand: dto.card_brand ?? null,
+      card_last4: dto.card_last4 ?? null,
+      card_country: dto.card_country ?? null,
+      user_id: dto.user_id ?? null,
+      guest_email: dto.guest_email ?? null,
+      payment_method_data: dto.payment_method_data ?? {},
+    });
   }
 }
