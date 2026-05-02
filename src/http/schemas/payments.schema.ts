@@ -5,7 +5,8 @@ export const verifyPaymentBodySchema = {
     payment_intent_id: { type: 'string', minLength: 1, maxLength: 255 },
     order_id: { type: 'string', format: 'uuid' },
     recaptcha_token: { type: 'string' },
-    session_id: { type: 'string', format: 'uuid' },
+    recaptcha_unavailable: { type: 'boolean' },
+    session_id: { type: 'string', maxLength: 128 },
     fingerprint_hash: { type: 'string', maxLength: 128 },
   },
   additionalProperties: false,
@@ -19,12 +20,4 @@ export const capturePaymentBodySchema = {
     order_id: { type: 'string', format: 'uuid' },
   },
   additionalProperties: false,
-} as const;
-
-export const stripeWebhookHeadersSchema = {
-  type: 'object',
-  required: ['stripe-signature'],
-  properties: {
-    'stripe-signature': { type: 'string' },
-  },
 } as const;

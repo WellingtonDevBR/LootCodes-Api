@@ -114,7 +114,7 @@ export async function checkoutRoutes(app: FastifyInstance) {
     },
   );
 
-  app.post<{ Body: { code: string; items: { variant_id: string; quantity: number }[] } }>(
+  app.post<{ Body: { code: string; items?: { variant_id: string; quantity: number }[]; cart_items?: { variant_id: string; quantity: number }[]; subtotal_cents?: number; user_id?: string; guest_email?: string; checkout_currency?: string } }>(
     '/validate-promo',
     {
       schema: { body: validatePromoBodySchema },
@@ -123,10 +123,11 @@ export async function checkoutRoutes(app: FastifyInstance) {
       const validatePromo = container.resolve<ValidatePromoCodeUseCase>(UC_TOKENS.ValidatePromoCode);
       const user = tryGetAuthUser(request);
 
+      const items = request.body.items ?? request.body.cart_items ?? [];
       const result = await validatePromo.execute(
         request.body.code,
-        request.body.items,
-        user?.id,
+        items,
+        user?.id ?? request.body.user_id,
       );
       return reply.send(result);
     },

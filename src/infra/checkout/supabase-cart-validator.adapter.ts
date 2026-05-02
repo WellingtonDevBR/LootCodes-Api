@@ -22,8 +22,16 @@ export class SupabaseCartValidatorAdapter implements ICartValidator {
   constructor(@inject(TOKENS.Database) private db: IDatabase) {}
 
   async checkStock(items: CartItem[]): Promise<StockCheckResult[]> {
-    return this.db.rpc<StockCheckResult[]>('check_cart_stock', {
-      p_items: items,
+    const variantIds = items.map((i) => i.variant_id);
+    const quantities = items.map((i) => i.quantity);
+    const rows = await this.db.rpc<{ variant_id: string; in_stock: boolean }[]>('check_cart_stock', {
+      p_variant_ids: variantIds,
+      p_quantities: quantities,
     });
+    return (Array.isArray(rows) ? rows : []).map((r) => ({
+      variant_id: r.variant_id,
+      available: r.in_stock,
+      available_quantity: r.in_stock ? 999 : 0,
+    }));
   }
 }
