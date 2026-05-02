@@ -25,6 +25,117 @@ export interface ProductPageData {
   variants: ProductVariant[];
 }
 
+// ── Storefront product page response (sanitized for client) ─────────
+
+export interface StorefrontProductTranslation {
+  language_code: string;
+  name?: string;
+  description?: string;
+  short_description?: string;
+  seo_title?: string;
+  seo_description?: string;
+  tags?: string[];
+}
+
+export interface StorefrontVariantTranslation {
+  language_code: string;
+  activation_instructions?: string;
+  system_requirements?: unknown;
+}
+
+export interface StorefrontVariantPlatform {
+  id: string;
+  code: string;
+  name: string;
+  slug: string;
+  icon_url?: string;
+  family_code?: string;
+}
+
+export interface StorefrontVariantRegion {
+  id: string;
+  code: string;
+  name: string;
+  is_global?: boolean;
+}
+
+export interface StorefrontVariant {
+  id: string;
+  slug?: string;
+  product_id: string;
+  region_id: string;
+  price_usd: number;
+  retail_price_usd?: number;
+  face_value?: string;
+  is_active: boolean;
+  purchasable: boolean;
+  release_date?: string | null;
+  activation_instructions?: string;
+  system_requirements?: unknown;
+  image_url?: string | null;
+  languages?: unknown[];
+  platforms: StorefrontVariantPlatform[];
+  region?: StorefrontVariantRegion;
+  variant_translations?: StorefrontVariantTranslation[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface StorefrontProduct {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  short_description?: string;
+  seo_title?: string;
+  seo_description?: string;
+  product_type?: string;
+  category?: string;
+  developer?: string;
+  publisher?: string;
+  rating?: string | null;
+  tags?: string[];
+  featured?: boolean;
+  image_url?: string | null;
+  cover_image_url?: string | null;
+  release_date?: string | null;
+  is_active?: boolean;
+  delivery_type?: string;
+  expected_delivery_date?: string | null;
+  preorder_delivery_info?: string | null;
+  preorder_start_date?: string | null;
+  preorder_end_date?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  currency?: string;
+  price_usd?: number;
+  discount_percentage?: number;
+  availability_status?: string;
+  review_count?: number;
+  customer_rating?: number | null;
+  metacritic_score?: number | null;
+  product_translations?: StorefrontProductTranslation[];
+  product_genres?: { genres: { name: string } }[];
+}
+
+export interface StorefrontGalleryItem {
+  id: string;
+  url: string;
+  image_type: string;
+  display_order: number;
+  thumbnail_url?: string;
+  alt_text?: string;
+}
+
+/** Sanitized product page response — no key counts, no internal flags. */
+export interface StorefrontProductPageData {
+  product: StorefrontProduct;
+  variants: StorefrontVariant[];
+  gallery: StorefrontGalleryItem[];
+  stock_status: Record<string, boolean>;
+  matchedVariantId?: string | null;
+}
+
 export interface Platform {
   id: string;
   name: string;

@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { container } from 'tsyringe';
-import { UC_TOKENS } from '../../di/tokens.js';
+import { UC_TOKENS, TOKENS } from '../../di/tokens.js';
 import type { StockCheckItem } from '../../core/use-cases/products/product.types.js';
 import type { GetProductBySlugUseCase } from '../../core/use-cases/products/catalog/get-product-by-slug.use-case.js';
 import type { GetProductByIdUseCase } from '../../core/use-cases/products/catalog/get-product-by-id.use-case.js';
@@ -31,6 +31,8 @@ import type { IsCountryAllowedUseCase } from '../../core/use-cases/products/geo/
 import type { GetExcludedCountriesUseCase } from '../../core/use-cases/products/geo/get-excluded-countries.use-case.js';
 import type { GetRestrictedVariantsUseCase } from '../../core/use-cases/products/geo/get-restricted-variants.use-case.js';
 import type { GetRestrictedRegionsUseCase } from '../../core/use-cases/products/geo/get-restricted-regions.use-case.js';
+import type { IPricingRepository } from '../../core/ports/pricing-repository.port.js';
+import type { StorefrontVariant } from '../../core/use-cases/products/product.types.js';
 import { authGuard } from '../middleware/auth.guard.js';
 import {
   slugParamsSchema,
@@ -49,6 +51,10 @@ import {
   geoRestrictedRegionsQuerySchema,
 } from '../schemas/products.schema.js';
 
+const ALLOWED_CURRENCIES = new Set(
+  ['USD', 'EUR', 'GBP', 'BRL', 'AUD', 'CAD', 'JPY', 'CNY', 'INR', 'MXN'],
+);
+
 interface AuthenticatedRequest {
   authUser: { id: string; email?: string };
 }
@@ -56,13 +62,51 @@ interface AuthenticatedRequest {
 export async function productRoutes(app: FastifyInstance) {
   // ─── Catalog ────────────────────────────────────────────────────
 
-  app.get<{ Params: { slug: string } }>(
+  app.get<{ Params: { slug: string }; Querystring: { currency?: string } }>(
     '/slug/:slug',
-    { schema: { params: slugParamsSchema } },
+    {
+      schema: {
+        params: slugParamsSchema,
+        querystring: {
+          type: 'object',
+          properties: {
+            currency: { type: 'string', minLength: 3, maxLength: 3 },
+          },
+        },
+      },
+    },
     async (request, reply) => {
       const uc = container.resolve<GetProductBySlugUseCase>(UC_TOKENS.GetProductBySlug);
       const data = await uc.execute(request.params.slug);
-      return reply.send(data);
+
+      const rawCurrency = (request.query.currency ?? 'USD').toUpperCase();
+      const displayCurrency = ALLOWED_CURRENCIES.has(rawCurrency) ? rawCurrency : 'USD';
+
+      if (displayCurrency === 'USD') {
+        return reply.send({ ...data, displayCurrency });
+      }
+
+      const pricingRepo = container.resolve<IPricingRepository>(TOKENS.PricingRepository);
+      const variantIds = data.variants.map((v: StorefrontVariant) => v.id);
+      const prices = await pricingRepo.getBatchPrices(variantIds, displayCurrency);
+
+      const convertedVariants = data.variants.map((v: StorefrontVariant) => {
+        const converted = prices.get(v.id);
+        return {
+          ...v,
+          displayPriceCents: converted?.price_cents ?? v.price_usd,
+          displayRetailCents: v.retail_price_usd != null
+            ? (converted ? Math.round((v.retail_price_usd / v.price_usd) * (converted.price_cents)) : v.retail_price_usd)
+            : undefined,
+          displayCurrency,
+        };
+      });
+
+      return reply.send({
+        ...data,
+        variants: convertedVariants,
+        displayCurrency,
+      });
     },
   );
 

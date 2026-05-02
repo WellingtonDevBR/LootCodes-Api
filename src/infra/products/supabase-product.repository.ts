@@ -11,6 +11,13 @@ const logger = createLogger('supabase-product-repository');
 export class SupabaseProductRepository implements IProductRepository {
   constructor(@inject(TOKENS.Database) private db: IDatabase) {}
 
+  async findBySlugRaw(slug: string): Promise<Record<string, unknown> | null> {
+    const result = await this.db.rpc<Record<string, unknown> | null>('get_product_page_data', {
+      p_slug: slug,
+    });
+    return result ?? null;
+  }
+
   async findBySlug(slug: string): Promise<ProductPageData | null> {
     const result = await this.db.rpc<ProductPageData | null>('get_product_page_data', {
       p_slug: slug,

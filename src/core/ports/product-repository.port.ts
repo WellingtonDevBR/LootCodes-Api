@@ -1,6 +1,7 @@
 import type { Product, ProductVariant, ProductPageData, GalleryItem, FeaturedProduct, StockCheckItem, StockCheckResult } from '../use-cases/products/product.types.js';
 
 export interface IProductRepository {
+  findBySlugRaw(slug: string): Promise<Record<string, unknown> | null>;
   findBySlug(slug: string): Promise<ProductPageData | null>;
   findById(id: string): Promise<Product | null>;
   getVariants(productId: string): Promise<ProductVariant[]>;
