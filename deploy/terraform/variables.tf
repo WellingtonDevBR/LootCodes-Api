@@ -116,7 +116,7 @@ variable "api_fqdn" {
 
 variable "route53_zone_id" {
   type        = string
-  description = "Route53 hosted zone ID for api_fqdn parent zone (e.g. Z123... for lootcodes.com). Required when enable_https_alb is true for ACM DNS validation."
+  description = "Route53 hosted zone ID for the api_fqdn parent zone (e.g. Z... for lootcodes.com). If empty, create the ACM DNS validation CNAME at your DNS provider (see acm_dns_validation_records output), then re-run apply."
   default     = ""
 }
 

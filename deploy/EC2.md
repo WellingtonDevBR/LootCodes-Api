@@ -24,7 +24,23 @@ Terraform in **`backend/deploy/terraform`** creates a **dedicated** API instance
 - **IAM instance profile**: SSM (`AmazonSSMManagedInstanceCore`) + **ECR pull** for your repository (no blanket admin).
 - **EC2 key pair**: **`ec2_key_pair_name`** defaults to **`Eneba`** (use with your existing **`Eneba.pem`** — the `.pem` stays local; Terraform only references the key name already registered under **EC2 → Key pairs**).  
 - **Security group**: **HTTPS egress**; **port 3000** from `api_ingress_cidr_blocks` when **`enable_https_alb`** is false, or **only from the ALB** when **`enable_https_alb`** is true. **No SSH** on port 22 unless you set `ssh_ingress_cidr_blocks` (SSM still works without SSH).
-- **Optional ALB** (`enable_https_alb`): ACM certificate (DNS validation in Route53), internet-facing ALB in **two** public AZs, **443** forwards to the instance **:3000**, **80** **301** redirects to **HTTPS**. Optional **Route53 alias** `api_fqdn` to the ALB. Requires **`api_fqdn`**, **`route53_zone_id`**, and a VPC with at least **two** `map_public_ip_on_launch` subnets in different AZs (see `checks.tf`).
+- **Optional ALB** (`enable_https_alb`): ACM certificate (DNS validation), internet-facing ALB in **two** public AZs, **443** forwards to the instance **:3000**, **80** **301** redirects to **HTTPS**. If **`route53_zone_id`** is set, Terraform creates validation records and can create an alias; if it is **empty** (DNS at your registrar / Cloudflare), add the **CNAME** from **`terraform output acm_dns_validation_records`**, then set **`api_fqdn`** as a **CNAME** (or equivalent) to **`alb_dns_name`**. Requires **`api_fqdn`**, a VPC with at least **two** public subnets in different AZs (see `checks.tf`), and a fresh AWS CLI session for **`terraform apply`** if you use **`aws login`** (ACM validation can take several minutes).
+
+**HTTPS ALB — DNS at Cloudflare / registrar (no Route53 zone in AWS)**
+
+1. In `terraform.tfvars`: `enable_https_alb = true`, `api_fqdn = "api.example.com"`, `route53_zone_id = ""`, `create_route53_alias_for_api = false`.
+2. Run **`aws login`** (or ensure long-lived credentials), then:
+
+   ```bash
+   eval "$(aws configure export-credentials --format env)"
+   cd backend/deploy/terraform && terraform apply
+   ```
+
+   The **`aws configure export-credentials`** step is required for Terraform when your profile uses **`aws login`** sessions; otherwise the provider may fall back to IMDS and fail. Long **`apply`** runs: refresh the session before apply if the ACM step waits many minutes.
+
+3. At your DNS host, create the **ACM validation** CNAME shown in **`terraform output acm_dns_validation_records`** (name + value exactly as issued).
+4. Point **`api_fqdn`** at the load balancer: **CNAME** `api` → **`alb_dns_name`** output (e.g. `xxx.us-east-1.elb.amazonaws.com`). Remove any **A** record that pointed at the EC2 public IP.
+5. Run **`terraform apply`** again until **`aws_acm_certificate_validation`** and **`aws_lb_listener.https`** succeed.
 - **Hardening**: **IMDSv2 required**, **encrypted gp3** root volume, **detailed monitoring** on.
 
 **Greenfield (new server)**

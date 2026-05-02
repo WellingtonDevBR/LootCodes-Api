@@ -9,6 +9,9 @@ terraform {
   }
 }
 
+# With `aws login` (short-lived sessions), run before apply:
+#   eval "$(aws configure export-credentials --format env)"
+# so Terraform uses the same credentials as the AWS CLI (otherwise the provider may try IMDS and fail).
 provider "aws" {
   region = var.aws_region
 

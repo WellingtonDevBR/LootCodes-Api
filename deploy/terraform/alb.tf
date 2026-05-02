@@ -103,13 +103,13 @@ resource "aws_acm_certificate" "api" {
 }
 
 resource "aws_route53_record" "cert_validation" {
-  for_each = {
-    for dvo in flatten(aws_acm_certificate.api[*].domain_validation_options) : dvo.domain_name => {
+  for_each = var.enable_https_alb && length(var.route53_zone_id) > 0 ? {
+    for dvo in aws_acm_certificate.api[0].domain_validation_options : dvo.domain_name => {
       name   = dvo.resource_record_name
       record = dvo.resource_record_value
       type   = dvo.resource_record_type
     }
-  }
+  } : {}
 
   allow_overwrite = true
   name            = each.value.name
@@ -122,8 +122,13 @@ resource "aws_route53_record" "cert_validation" {
 resource "aws_acm_certificate_validation" "api" {
   count = var.enable_https_alb ? 1 : 0
 
-  certificate_arn         = aws_acm_certificate.api[0].arn
-  validation_record_fqdns = [for r in aws_route53_record.cert_validation : r.fqdn]
+  certificate_arn = aws_acm_certificate.api[0].arn
+  # Works with Route53 records managed here or CNAMEs created at an external DNS host.
+  validation_record_fqdns = [for dvo in aws_acm_certificate.api[0].domain_validation_options : dvo.resource_record_name]
+
+  timeouts {
+    create = "20m"
+  }
 }
 
 resource "aws_lb_listener" "https" {
@@ -160,7 +165,7 @@ resource "aws_lb_listener" "http_redirect" {
 }
 
 resource "aws_route53_record" "api_alias" {
-  count = var.enable_https_alb && var.create_route53_alias_for_api ? 1 : 0
+  count = var.enable_https_alb && var.create_route53_alias_for_api && length(var.route53_zone_id) > 0 ? 1 : 0
 
   zone_id = var.route53_zone_id
   name    = var.api_fqdn

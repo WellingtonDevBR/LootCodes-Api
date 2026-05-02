@@ -1,12 +1,19 @@
 # Fail fast when a public IP is requested but we would have fallen back to a private subnet.
 
-check "https_alb_requires_dns_inputs" {
+check "https_alb_requires_api_fqdn" {
+  assert {
+    condition     = !var.enable_https_alb || length(var.api_fqdn) > 0
+    error_message = "When enable_https_alb is true, set api_fqdn (e.g. api.lootcodes.com)."
+  }
+}
+
+check "route53_alias_needs_zone" {
   assert {
     condition = (
-      !var.enable_https_alb ||
-      (length(var.api_fqdn) > 0 && length(var.route53_zone_id) > 0)
+      !var.create_route53_alias_for_api ||
+      length(var.route53_zone_id) > 0
     )
-    error_message = "When enable_https_alb is true, set api_fqdn and route53_zone_id (for ACM DNS validation records)."
+    error_message = "create_route53_alias_for_api requires route53_zone_id, or set create_route53_alias_for_api = false and point api_fqdn at the ALB manually (see alb_dns_name output)."
   }
 }
 

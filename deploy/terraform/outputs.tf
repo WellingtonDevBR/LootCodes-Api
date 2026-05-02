@@ -27,6 +27,17 @@ output "https_api_url" {
   value       = var.enable_https_alb ? "https://${var.api_fqdn}" : null
 }
 
+output "acm_dns_validation_records" {
+  description = "CNAME records to create at your DNS provider when route53_zone_id is empty (ACM certificate must validate before HTTPS listener succeeds)."
+  value = var.enable_https_alb ? [
+    for dvo in aws_acm_certificate.api[0].domain_validation_options : {
+      name  = dvo.resource_record_name
+      type  = dvo.resource_record_type
+      value = dvo.resource_record_value
+    }
+  ] : []
+}
+
 output "ssm_session_hint" {
   description = "Connect without SSH using Session Manager."
   value       = "aws ssm start-session --target ${aws_instance.api.id} --region ${var.aws_region}"
