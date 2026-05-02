@@ -1,10 +1,10 @@
 import { injectable, inject } from 'tsyringe';
 import { TOKENS, UC_TOKENS } from '../../../../di/tokens.js';
-import type { IDatabase } from '../../../ports/database.port.js';
 import type { IPricingRepository } from '../../../ports/pricing-repository.port.js';
 import type { GetProductBySlugUseCase } from './get-product-by-slug.use-case.js';
 import type { GetBatchRecommendationsUseCase } from '../../recommendations/get-batch-recommendations.use-case.js';
 import type { GetProductRatingUseCase } from '../../reviews/get-product-rating.use-case.js';
+import type { GetConfigUseCase } from '../../price-match/get-config.use-case.js';
 import type { IGeoRestrictionRepository } from '../../../ports/geo-restriction-repository.port.js';
 import type { StorefrontProductPageData, StorefrontVariant, RecommendationsBatch } from '../product.types.js';
 import type { ProductRating } from '../../reviews/review.types.js';
@@ -38,9 +38,9 @@ export class GetCompositeProductPageUseCase {
     @inject(UC_TOKENS.GetProductBySlug) private getBySlug: GetProductBySlugUseCase,
     @inject(UC_TOKENS.GetProductRating) private getRating: GetProductRatingUseCase,
     @inject(UC_TOKENS.GetBatchRecommendations) private getBatchRecs: GetBatchRecommendationsUseCase,
+    @inject(UC_TOKENS.GetPriceMatchConfig) private getConfigUC: GetConfigUseCase,
     @inject(TOKENS.GeoRestrictionRepository) private geoRepo: IGeoRestrictionRepository,
     @inject(TOKENS.PricingRepository) private pricingRepo: IPricingRepository,
-    @inject(TOKENS.Database) private db: IDatabase,
   ) {}
 
   async execute(slug: string, country?: string, currency?: string): Promise<CompositeProductPageResult> {
@@ -119,12 +119,7 @@ export class GetCompositeProductPageUseCase {
       return cachedPriceMatchConfig.data;
     }
     try {
-      const rows = await this.db.query<{ config_value: Record<string, unknown> }>('security_config', {
-        select: 'config_value',
-        eq: [['config_key', 'price_match_config']],
-        limit: 1,
-      });
-      const config = rows[0]?.config_value ?? null;
+      const config = await this.getConfigUC.execute();
       if (config) {
         cachedPriceMatchConfig = { data: config, fetchedAt: now };
       }
