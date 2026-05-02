@@ -13,6 +13,7 @@ const authBodyProperties = {
   fingerprint_hash: { type: 'string', maxLength: 128 },
   referral_code: { type: 'string', maxLength: 50 },
   otp_code: { type: 'string', maxLength: 10 },
+  email_verification_code: { type: 'string', maxLength: 6 },
 } as const;
 
 export const authRequestSchema = {

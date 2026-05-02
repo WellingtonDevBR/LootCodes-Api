@@ -61,13 +61,16 @@ export class SupabaseAuthAdapter implements IAuthProvider {
     const { data, error } = await client.auth.admin.createUser({
       email,
       password,
-      email_confirm: false,
+      email_confirm: true,
       user_metadata: metadata,
     });
     if (error) throw new InternalError(error.message);
+
+    const signInResult = await this.signInWithPassword(email, password);
+
     return {
       user: mapUser(data.user as unknown as Record<string, unknown>),
-      session: null,
+      session: signInResult.session,
     };
   }
 

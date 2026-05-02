@@ -1,10 +1,12 @@
 import type { FastifyInstance } from 'fastify';
 import { container } from 'tsyringe';
-import { UC_TOKENS } from '../../di/tokens.js';
+import { UC_TOKENS, TOKENS } from '../../di/tokens.js';
+import type { IAuthProvider } from '../../core/ports/auth.port.js';
 import type { GeolocateUseCase } from '../../core/use-cases/analytics/geolocate.use-case.js';
 import type { ConvertCartPricesUseCase } from '../../core/use-cases/products/pricing/convert-cart-prices.use-case.js';
 import type { GetActivePromoHeaderUseCase } from '../../core/use-cases/products/storefront/get-active-promo-header.use-case.js';
 import type { GetTrustpilotDataUseCase } from '../../core/use-cases/products/storefront/get-trustpilot-data.use-case.js';
+import type { GetHomepageDataUseCase } from '../../core/use-cases/storefront/get-homepage-data.use-case.js';
 import type { ClaimReviewRewardUseCase } from '../../core/use-cases/wallet/claim-review-reward.use-case.js';
 import type { MerchandisedSearchUseCase } from '../../core/use-cases/search/merchandised-search.use-case.js';
 import { authGuard } from '../middleware/auth.guard.js';
@@ -116,4 +118,38 @@ export async function storefrontRoutes(app: FastifyInstance) {
     const data = await uc.execute();
     return reply.send(data);
   });
+
+  app.get<{ Querystring: { session_id?: string } }>(
+    '/homepage',
+    {
+      schema: {
+        querystring: {
+          type: 'object',
+          properties: {
+            session_id: { type: 'string', maxLength: 100 },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      let userId: string | undefined;
+      const authHeader = request.headers.authorization;
+      if (authHeader?.startsWith('Bearer ')) {
+        try {
+          const authProvider = container.resolve<IAuthProvider>(TOKENS.AuthProvider);
+          const user = await authProvider.getUserByToken(authHeader.slice(7));
+          if (user) userId = user.id;
+        } catch {
+          // Anonymous request — proceed without user
+        }
+      }
+
+      const uc = container.resolve<GetHomepageDataUseCase>(UC_TOKENS.GetHomepageData);
+      const data = await uc.execute({
+        userId,
+        sessionId: request.query.session_id,
+      });
+      return reply.send(data);
+    },
+  );
 }

@@ -68,6 +68,7 @@ import { SupabaseNewsletterRepository } from '../infra/newsletter/supabase-newsl
 // Security adapters
 import { SupabaseSecurityHoldRepository } from '../infra/security/supabase-security-hold.repository.js';
 import { SupabaseVerificationStorageAdapter } from '../infra/security/supabase-verification-storage.adapter.js';
+import { SupabaseVerificationCodeAdapter } from '../infra/verification/supabase-verification-code.adapter.js';
 
 // Card Challenge adapters
 import { SupabaseCardChallengeRepository } from '../infra/card-challenge/supabase-card-challenge.repository.js';
@@ -211,6 +212,7 @@ import { GetRestrictedRegionsUseCase } from '../core/use-cases/products/geo/get-
 // --- Products: storefront use cases ---
 import { GetActivePromoHeaderUseCase } from '../core/use-cases/products/storefront/get-active-promo-header.use-case.js';
 import { GetTrustpilotDataUseCase } from '../core/use-cases/products/storefront/get-trustpilot-data.use-case.js';
+import { GetHomepageDataUseCase } from '../core/use-cases/storefront/get-homepage-data.use-case.js';
 
 // --- Analytics use cases ---
 import { GeolocateUseCase } from '../core/use-cases/analytics/geolocate.use-case.js';
@@ -358,6 +360,7 @@ container.register(TOKENS.NewsletterRepository, { useClass: SupabaseNewsletterRe
 // --- Security ---
 container.register(TOKENS.SecurityHoldRepository, { useClass: SupabaseSecurityHoldRepository });
 container.register(TOKENS.VerificationStorage, { useClass: SupabaseVerificationStorageAdapter });
+container.register(TOKENS.VerificationCodeService, { useClass: SupabaseVerificationCodeAdapter });
 
 // --- Card Challenge ---
 container.register(TOKENS.CardChallengeRepository, { useClass: SupabaseCardChallengeRepository });
@@ -507,6 +510,7 @@ container.register(UC_TOKENS.GetRestrictedRegions, { useClass: GetRestrictedRegi
 // --- Products: Storefront Use Cases ---
 container.register(UC_TOKENS.GetActivePromoHeader, { useClass: GetActivePromoHeaderUseCase });
 container.register(UC_TOKENS.GetTrustpilotData, { useClass: GetTrustpilotDataUseCase });
+container.register(UC_TOKENS.GetHomepageData, { useClass: GetHomepageDataUseCase });
 
 // --- Analytics Use Cases ---
 container.register(UC_TOKENS.Geolocate, { useClass: GeolocateUseCase });

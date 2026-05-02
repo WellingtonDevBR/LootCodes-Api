@@ -6,6 +6,9 @@ import { isAssessmentAcceptable, getRiskLevel } from '../../ports/recaptcha.port
 import type { IUserRepository } from '../../ports/user-repository.port.js';
 import type { IRateLimiter } from '../../ports/rate-limiter.port.js';
 import type { IIpBlocklist } from '../../ports/ip-blocklist.port.js';
+import type { IVerificationCodeService } from '../../ports/verification-code.port.js';
+import type { IEmailSender } from '../../ports/email.port.js';
+import type { IUserProfileRepository } from '../../ports/user-profile-repository.port.js';
 import type { AuthRequestDto, AuthContext, AuthResult } from './auth.types.js';
 import {
   ValidationError,
@@ -22,6 +25,7 @@ import {
 import { rateLimitIdentifier } from '../../../shared/client-ip.js';
 import { maskEmail } from '../../../shared/pii.js';
 import { createLogger } from '../../../shared/logger.js';
+import { buildVerificationEmailHtml } from '../../../infra/email/templates/verification-email.js';
 
 const logger = createLogger('handle-auth-use-case');
 
@@ -33,6 +37,9 @@ export class HandleAuthUseCase {
     @inject(TOKENS.UserRepository) private userRepo: IUserRepository,
     @inject(TOKENS.RateLimiter) private rateLimiter: IRateLimiter,
     @inject(TOKENS.IpBlocklist) private ipBlocklist: IIpBlocklist,
+    @inject(TOKENS.VerificationCodeService) private verificationCode: IVerificationCodeService,
+    @inject(TOKENS.EmailSender) private emailSender: IEmailSender,
+    @inject(TOKENS.UserProfileRepository) private userProfileRepo: IUserProfileRepository,
   ) {}
 
   async execute(dto: AuthRequestDto, ctx: AuthContext): Promise<AuthResult> {
@@ -86,9 +93,12 @@ export class HandleAuthUseCase {
       const result = await this.auth.signInWithPassword(emailResult.sanitized!, dto.password);
       logger.info('Sign-in successful', { requestId: ctx.requestId, userId: result.user.id });
 
+      const role = await this.resolveRole(result.user.id);
+
       return {
         success: true,
         user: { id: result.user.id, email: result.user.email },
+        role,
         session: result.session
           ? {
               access_token: result.session.access_token,
@@ -123,25 +133,147 @@ export class HandleAuthUseCase {
     const countryResult = validateCountryCode(dto.country);
     if (!countryResult.isValid) throw new ValidationError(countryResult.error!);
 
+    if (!dto.email_verification_code) {
+      return this.sendSignUpVerificationCode(emailResult.sanitized!, ctx);
+    }
+
+    return this.verifyAndCreateUser(dto, emailResult.sanitized!, nameResult.sanitized!, countryResult.sanitized!, ctx);
+  }
+
+  private async sendSignUpVerificationCode(email: string, ctx: AuthContext): Promise<AuthResult> {
+    const { code, expiresAt } = await this.verificationCode.generate(
+      email,
+      'sign_up',
+      ctx.ipAddress,
+      ctx.requestId,
+    );
+
+    const expiresInMinutes = Math.round((expiresAt.getTime() - Date.now()) / 60_000);
+
+    const html = buildVerificationEmailHtml({
+      verificationCode: code,
+      action: 'sign_up',
+      userEmail: email,
+      expiresInMinutes,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+    });
+
+    await this.emailSender.send({
+      to: email,
+      subject: 'Verify your email — LootCodes',
+      html,
+    });
+
+    logger.info('Verification code sent for sign-up', {
+      requestId: ctx.requestId,
+      email: maskEmail(email),
+    });
+
+    return {
+      success: false,
+      emailVerificationRequired: true,
+      message: 'Email verification required',
+    };
+  }
+
+  private async verifyAndCreateUser(
+    dto: AuthRequestDto,
+    email: string,
+    fullName: string,
+    country: string,
+    ctx: AuthContext,
+  ): Promise<AuthResult> {
+    await this.verificationCode.verify(
+      email,
+      'sign_up',
+      dto.email_verification_code!,
+      ctx.ipAddress,
+      ctx.requestId,
+    );
+
     try {
-      const result = await this.auth.signUp(emailResult.sanitized!, dto.password, {
-        full_name: nameResult.sanitized,
-        country: countryResult.sanitized,
+      const existingId = await this.userRepo.findIdByEmail(email);
+
+      if (existingId) {
+        const existingUser = await this.auth.getUserById(existingId);
+        if (!existingUser) {
+          throw new ValidationError('Sign-up could not be completed. Please request a new code and try again.');
+        }
+
+        if (existingUser.email_confirmed_at) {
+          logger.warn('Sign-up after OTP skipped — email already verified', {
+            requestId: ctx.requestId,
+            email: maskEmail(email),
+          });
+          throw new ValidationError(
+            'This email already has an account. Please sign in instead, or reset your password if you forgot it.',
+          );
+        }
+
+        const priorMeta =
+          typeof existingUser.user_metadata === 'object' && existingUser.user_metadata !== null
+            ? (existingUser.user_metadata as Record<string, unknown>)
+            : {};
+
+        await this.auth.updateUser(existingId, {
+          password: dto.password,
+          email_confirm: true,
+          user_metadata: {
+            ...priorMeta,
+            full_name: fullName,
+            country,
+          },
+        });
+
+        const signIn = await this.auth.signInWithPassword(email, dto.password!);
+        const session = signIn.session
+          ? {
+              access_token: signIn.session.access_token,
+              refresh_token: signIn.session.refresh_token,
+              expires_in: signIn.session.expires_in,
+            }
+          : undefined;
+
+        logger.info('Sign-up completed for existing unconfirmed user (OTP)', {
+          requestId: ctx.requestId,
+          userId: existingId,
+          email: maskEmail(email),
+        });
+
+        return {
+          success: true,
+          user: { id: existingId, email: existingUser.email ?? email },
+          role: 'user',
+          session,
+        };
+      }
+
+      const result = await this.auth.signUp(email, dto.password!, {
+        full_name: fullName,
+        country,
       });
 
       logger.info('Sign-up successful', {
         requestId: ctx.requestId,
         userId: result.user.id,
-        email: maskEmail(dto.email),
+        email: maskEmail(email),
       });
 
       return {
         success: true,
-        user: { id: result.user.id, email: result.user.email },
-        requiresVerification: true,
-        message: 'Please check your email to verify your account',
+        user: { id: result.user.id, email: result.user.email ?? email },
+        role: 'user',
+        session: result.session
+          ? {
+              access_token: result.session.access_token,
+              refresh_token: result.session.refresh_token,
+              expires_in: result.session.expires_in,
+            }
+          : undefined,
       };
     } catch (err) {
+      if (err instanceof ValidationError) throw err;
       const message = err instanceof Error ? err.message : 'Sign-up failed';
       logger.error('Sign-up failed', err as Error, { requestId: ctx.requestId });
       throw new ValidationError(message);
@@ -188,9 +320,12 @@ export class HandleAuthUseCase {
       const result = await this.auth.verifyOtp(dto.phone, dto.otp_code);
       logger.info('OTP verified', { requestId: ctx.requestId, userId: result.user.id });
 
+      const role = await this.resolveRole(result.user.id);
+
       return {
         success: true,
         user: { id: result.user.id, phone: result.user.phone },
+        role,
         session: result.session
           ? {
               access_token: result.session.access_token,
@@ -201,6 +336,14 @@ export class HandleAuthUseCase {
       };
     } catch {
       throw new AuthenticationError('Invalid OTP');
+    }
+  }
+
+  private async resolveRole(userId: string): Promise<string> {
+    try {
+      return (await this.userProfileRepo.getRole(userId)) ?? 'user';
+    } catch {
+      return 'user';
     }
   }
 

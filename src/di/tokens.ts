@@ -65,6 +65,7 @@ export const TOKENS = {
   // Security / Verification
   SecurityHoldRepository: Symbol.for('ISecurityHoldRepository'),
   VerificationStorage: Symbol.for('IVerificationStorage'),
+  VerificationCodeService: Symbol.for('IVerificationCodeService'),
 
   // Card Challenge
   CardChallengeRepository: Symbol.for('ICardChallengeRepository'),
@@ -216,6 +217,7 @@ export const UC_TOKENS = {
   // Products — storefront
   GetActivePromoHeader: Symbol.for('GetActivePromoHeaderUseCase'),
   GetTrustpilotData: Symbol.for('GetTrustpilotDataUseCase'),
+  GetHomepageData: Symbol.for('GetHomepageDataUseCase'),
 
   // Analytics use cases
   TrackBatch: Symbol.for('TrackBatchUseCase'),

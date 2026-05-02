@@ -12,6 +12,7 @@ export interface AuthRequestDto {
   fingerprint_hash?: string;
   referral_code?: string;
   otp_code?: string;
+  email_verification_code?: string;
 }
 
 export interface AuthContext {
@@ -35,5 +36,7 @@ export interface AuthResult {
     expires_in: number;
   };
   message?: string;
+  role?: string;
   requiresVerification?: boolean;
+  emailVerificationRequired?: boolean;
 }
