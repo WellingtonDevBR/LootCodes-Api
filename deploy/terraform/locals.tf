@@ -36,7 +36,21 @@ locals {
     for id in local.public_subnets_usable : data.aws_subnet.vpc_subnet[id].availability_zone => id...
   }
 
+  sorted_alb_azs = sort(keys(local.public_subnets_by_az))
+
+  alb_azs_for_lb = (
+    length(local.sorted_alb_azs) <= var.alb_availability_zone_count
+    ? local.sorted_alb_azs
+    : slice(local.sorted_alb_azs, 0, var.alb_availability_zone_count)
+  )
+
   alb_subnet_ids = var.enable_https_alb ? [
-    for az in sort(keys(local.public_subnets_by_az)) : sort(local.public_subnets_by_az[az])[0]
+    for az in local.alb_azs_for_lb : sort(local.public_subnets_by_az[az])[0]
   ] : []
+
+  # Customer EC2 Elastic IP: useless for api.example.com when DNS points at the ALB (AWS cannot attach
+  # your EIP to an ALB). Default is no EC2 EIP when ALB is on unless allocate_elastic_ip_alongside_alb.
+  create_ec2_elastic_ip = var.allocate_elastic_ip && (
+    !var.enable_https_alb || var.allocate_elastic_ip_alongside_alb
+  )
 }

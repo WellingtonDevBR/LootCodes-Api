@@ -48,8 +48,25 @@ variable "associate_public_ip" {
 
 variable "allocate_elastic_ip" {
   type        = bool
-  description = "Create one tagged customer Elastic IP (Name = project-environment-ec2-eip) on the API EC2 instance. Does not control the ALB: internet-facing ALBs still show extra EIPs in the console (ServiceManaged=alb, one per subnet/AZ)—those are normal and not created by this flag."
+  description = "Create a customer-managed Elastic IP on the API EC2 instance. When enable_https_alb is true, the public hostname should target the ALB, not this IP—set allocate_elastic_ip_alongside_alb only if you still need direct EC2 access on a static IP."
   default     = true
+}
+
+variable "allocate_elastic_ip_alongside_alb" {
+  type        = bool
+  description = "When both allocate_elastic_ip and enable_https_alb are true, set true to attach the Elastic IP to EC2 anyway. Default false avoids an extra static IPv4: traffic to api FQDN should use the ALB (AWS does not support linking your EIP to an Application Load Balancer)."
+  default     = false
+}
+
+variable "alb_availability_zone_count" {
+  type        = number
+  description = "How many AZs the internet-facing ALB uses (min 2). Each AZ adds one AWS-managed public address for the ALB. Use 2 for the usual HA + fewer console 'Elastic IP' rows."
+  default     = 2
+
+  validation {
+    condition     = var.alb_availability_zone_count >= 2 && var.alb_availability_zone_count <= 8
+    error_message = "alb_availability_zone_count must be between 2 and 8."
+  }
 }
 
 variable "api_ingress_cidr_blocks" {
