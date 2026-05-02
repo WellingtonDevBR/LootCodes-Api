@@ -30,7 +30,7 @@ const envSchema = z.object({
   SITE_URL: z.string().url().default('https://lootcodes.com'),
   SITE_NAME: z.string().default('LootCodes'),
 
-  SENTRY_DSN: z.string().url().optional(),
+  SENTRY_DSN: z.string().url().optional().or(z.literal('')),
   SENTRY_ENVIRONMENT: z.string().optional(),
   SENTRY_RELEASE: z.string().optional(),
 });
