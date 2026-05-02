@@ -81,9 +81,8 @@ export class SupabaseAnalyticsRepository implements IAnalyticsRepository {
     await this.db.insert('product_views', {
       session_id: data.session_id,
       product_id: data.product_id,
-      variant_id: data.variant_id,
       user_id: data.user_id,
-      duration_seconds: data.duration_seconds,
+      view_duration_seconds: data.duration_seconds,
     });
     logger.debug('Product view duration inserted', { productId: data.product_id });
   }
