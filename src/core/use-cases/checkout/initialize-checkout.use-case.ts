@@ -6,6 +6,7 @@ import type { IPromoCodeValidator } from '../../ports/promo-code-validator.port.
 import type { ICartValidator } from '../../ports/cart-validator.port.js';
 import type { IRateLimiter } from '../../ports/rate-limiter.port.js';
 import type { IIpBlocklist } from '../../ports/ip-blocklist.port.js';
+import type { ICustomerResolver } from '../../ports/customer-resolver.port.js';
 import type { CheckoutInitDto, CheckoutResult } from './checkout.types.js';
 import { ValidationError } from '../../errors/domain-errors.js';
 import { enforceCheckoutSecurity } from '../_shared/checkout-security.js';
@@ -27,6 +28,7 @@ export class InitializeCheckoutUseCase {
     @inject(TOKENS.CartValidator) private cartValidator: ICartValidator,
     @inject(TOKENS.RateLimiter) private rateLimiter: IRateLimiter,
     @inject(TOKENS.IpBlocklist) private ipBlocklist: IIpBlocklist,
+    @inject(TOKENS.CustomerResolver) private customerResolver: ICustomerResolver,
   ) {}
 
   async execute(
@@ -89,6 +91,13 @@ export class InitializeCheckoutUseCase {
     const chargedCents = Math.max(subtotalCents - discountAmountCents, 1);
     const paymentProviderName = normalizePaymentProviderName(dto.payment_provider);
 
+    const contactEmail = dto.customer_email?.trim().toLowerCase();
+    const customerId = await this.resolveCustomerId(userId, contactEmail);
+
+    if (userId && customerId) {
+      this.customerResolver.cacheCustomerId(userId, customerId).catch(() => {});
+    }
+
     const draft = await this.checkoutRepo.createOrder({
       user_id: userId,
       session_id: dto.session_id ?? null,
@@ -103,11 +112,13 @@ export class InitializeCheckoutUseCase {
       customer_email: dto.customer_email,
       customer_name: dto.customer_name,
       billing_address: dto.billing_address ?? null,
+      provider_customer_id: customerId,
     });
 
     const paymentIntent = await this.paymentProvider.createPaymentIntent({
       amount_cents: chargedCents,
       currency: currencyStripe,
+      customer_id: customerId ?? undefined,
       metadata: {
         order_id: draft.id,
         order_number: draft.order_number ?? '',
@@ -134,5 +145,51 @@ export class InitializeCheckoutUseCase {
       discount_amount_cents: discountAmountCents,
       wallet_redeem_cents: typeof dto.wallet_redeem_cents === 'number' ? dto.wallet_redeem_cents : 0,
     };
+  }
+
+  /**
+   * Three-step resolution mirroring the Edge Function `create-order.ts`:
+   *   1. Cached on profile (`stripe_customer_id`)
+   *   2. Stripe lookup by email
+   *   3. Create new Stripe Customer
+   *
+   * A missing customer silently collapses the card-challenge micro-auth
+   * path into ID-upload-only, so we treat customer creation failure as
+   * checkout-blocking (same as the Edge handler).
+   */
+  private async resolveCustomerId(
+    userId: string | undefined,
+    email: string | undefined,
+  ): Promise<string | null> {
+    if (!email) return null;
+
+    if (userId) {
+      try {
+        const cached = await this.customerResolver.getCachedCustomerId(userId);
+        if (cached) return cached;
+      } catch (err) {
+        logger.warn('Customer cache lookup failed', {
+          userId,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+
+    try {
+      const existing = await this.customerResolver.lookupCustomer(email);
+      if (existing) return existing;
+    } catch (err) {
+      logger.warn('Customer lookup failed — will create new', {
+        email,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    const created = await this.customerResolver.createCustomer({
+      email,
+      metadata: userId ? { user_id: userId } : {},
+    });
+    logger.info('Customer created for checkout', { customerId: created, userId });
+    return created;
   }
 }

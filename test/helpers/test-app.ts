@@ -214,6 +214,7 @@ import {
   MockGeoRestrictionRepository,
   MockRecommendationRepository,
   MockSearchProvider,
+  MockCustomerResolver,
 } from './mock-ports.js';
 
 export interface TestMocks {
@@ -269,6 +270,7 @@ export interface TestMocks {
   geoRestrictionRepo: MockGeoRestrictionRepository;
   recommendationRepo: MockRecommendationRepository;
   searchProvider: MockSearchProvider;
+  customerResolver: MockCustomerResolver;
 }
 
 function setTestEnv() {
@@ -339,6 +341,7 @@ function registerMocks(): TestMocks {
     geoRestrictionRepo: new MockGeoRestrictionRepository(),
     recommendationRepo: new MockRecommendationRepository(),
     searchProvider: new MockSearchProvider(),
+    customerResolver: new MockCustomerResolver(),
   };
 
   // Infrastructure
@@ -367,6 +370,7 @@ function registerMocks(): TestMocks {
   container.register(TOKENS.CheckoutRepository, { useValue: mocks.checkoutRepo });
   container.register(TOKENS.PromoCodeValidator, { useValue: mocks.promoCodeValidator });
   container.register(TOKENS.CartValidator, { useValue: mocks.cartValidator });
+  container.register(TOKENS.CustomerResolver, { useValue: mocks.customerResolver });
 
   // Support
   container.register(TOKENS.SupportTicketRepository, { useValue: mocks.supportTicketRepo });

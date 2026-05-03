@@ -1,6 +1,7 @@
 export interface CreatePaymentIntentParams {
   amount_cents: number;
   currency: string;
+  customer_id?: string;
   metadata?: Record<string, string>;
 }
 

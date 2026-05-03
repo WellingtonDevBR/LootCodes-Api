@@ -25,6 +25,7 @@ export const TOKENS = {
   CheckoutRepository: Symbol.for('ICheckoutRepository'),
   PromoCodeValidator: Symbol.for('IPromoCodeValidator'),
   CartValidator: Symbol.for('ICartValidator'),
+  CustomerResolver: Symbol.for('ICustomerResolver'),
 
   // Support
   SupportTicketRepository: Symbol.for('ISupportTicketRepository'),

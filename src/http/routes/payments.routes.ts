@@ -46,6 +46,15 @@ const paymentRateLimit = createRateLimitGuard({ endpoint: 'payment', limit: 10, 
 
 export async function paymentRoutes(app: FastifyInstance) {
   // Guest-safe transparent proxy — domain logic lives upstream (adapter-swappable via DI).
+  //
+  // The upstream may return non-2xx for domain-level outcomes (410 expired,
+  // 404 not_found, 503 feature_disabled) whose payloads the frontend
+  // inspects via `res.success` / `res.status` fields in the JSON body.
+  // `backendPost` on the client throws on non-2xx, preventing the frontend
+  // from reading those bodies. We normalise self-describing domain responses
+  // (JSON with a `success` field) to HTTP 200 so the frontend can
+  // discriminate on the body. True transport errors (no parseable body)
+  // keep their original status.
   app.post('/card-challenge', { preHandler: [paymentRateLimit] }, async (request, reply) => {
     const parsed = buyerEdgeCardChallengeBodySchemaZ.safeParse(request.body);
     if (!parsed.success) {
@@ -54,7 +63,13 @@ export async function paymentRoutes(app: FastifyInstance) {
     const proxy = container.resolve<IBuyerCardChallengeProxy>(TOKENS.BuyerCardChallengeProxy);
     const proxyReq = buildProxyRequest(request, parsed.data as unknown as Record<string, unknown>);
     const { status, payload } = await proxy.forward(proxyReq);
-    return reply.code(status).send(payload);
+
+    const isDomainResponse =
+      payload != null
+      && typeof payload === 'object'
+      && 'success' in payload;
+
+    return reply.code(isDomainResponse ? 200 : status).send(payload);
   });
 
   // Guest-safe: no authGuard. Both guests and authenticated users call verify

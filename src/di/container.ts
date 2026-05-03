@@ -25,6 +25,7 @@ import { StripePaymentGatewayAdapter } from '../infra/payments/stripe-payment-ga
 
 // Checkout adapters
 import { StripePaymentAdapter } from '../infra/payments/stripe-payment.adapter.js';
+import { StripeCustomerResolverAdapter } from '../infra/payments/stripe-customer-resolver.adapter.js';
 import { SupabaseCheckoutRepository } from '../infra/checkout/supabase-checkout.repository.js';
 import { SupabasePromoCodeValidatorAdapter } from '../infra/checkout/supabase-promo-code-validator.adapter.js';
 import { SupabaseCartValidatorAdapter } from '../infra/checkout/supabase-cart-validator.adapter.js';
@@ -332,6 +333,7 @@ container.register(TOKENS.PaymentProvider, { useClass: StripePaymentAdapter });
 container.register(TOKENS.CheckoutRepository, { useClass: SupabaseCheckoutRepository });
 container.register(TOKENS.PromoCodeValidator, { useClass: SupabasePromoCodeValidatorAdapter });
 container.register(TOKENS.CartValidator, { useClass: SupabaseCartValidatorAdapter });
+container.register(TOKENS.CustomerResolver, { useClass: StripeCustomerResolverAdapter });
 
 // --- Support ---
 container.register(TOKENS.SupportTicketRepository, { useClass: SupabaseSupportTicketRepository });

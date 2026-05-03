@@ -116,6 +116,7 @@ export class SupabaseCheckoutRepository implements ICheckoutRepository {
       currency: currencyCode,
       payment_provider: params.payment_provider,
       promo_code_id: params.promo_code_id ?? null,
+      provider_customer_id: params.provider_customer_id ?? null,
       provider_payment_id: null,
       ip_address: inetColumnOrNull(params.ip_address ?? undefined),
     };

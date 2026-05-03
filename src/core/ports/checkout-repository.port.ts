@@ -20,6 +20,7 @@ export interface CreateOrderParams {
   customer_email?: string;
   customer_name?: string;
   billing_address?: BillingAddressPayload | null;
+  provider_customer_id?: string | null;
 }
 
 export interface ICheckoutRepository {

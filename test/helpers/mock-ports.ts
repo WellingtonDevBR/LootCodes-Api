@@ -783,6 +783,23 @@ export class MockRecommendationRepository implements IRecommendationRepository {
   async getPreOrders(_limit: number): Promise<RecommendedProduct[]> { return []; }
 }
 
+// ─── Customer Resolver ──────────────────────────────────────────
+
+import type { ICustomerResolver } from '../../src/core/ports/customer-resolver.port.js';
+
+export class MockCustomerResolver implements ICustomerResolver {
+  cachedCustomerId: string | null = null;
+  lookupResult: string | null = null;
+  createdCustomerId = 'cus_test_mock';
+
+  async getCachedCustomerId(_userId: string): Promise<string | null> { return this.cachedCustomerId; }
+  async lookupCustomer(_email: string): Promise<string | null> { return this.lookupResult; }
+  async createCustomer(_params: { email: string; name?: string | null; metadata?: Record<string, string> }): Promise<string> {
+    return this.createdCustomerId;
+  }
+  async cacheCustomerId(_userId: string, _customerId: string): Promise<void> {}
+}
+
 // ─── Search ─────────────────────────────────────────────────────
 
 export class MockSearchProvider implements ISearchProvider {

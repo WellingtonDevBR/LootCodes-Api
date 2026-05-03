@@ -36,12 +36,18 @@ export class StripePaymentAdapter implements IPaymentProvider {
     const stripe = getStripeClient();
 
     try {
-      const intent = await stripe.paymentIntents.create({
+      const createParams: Stripe.PaymentIntentCreateParams = {
         amount: params.amount_cents,
         currency: params.currency.toLowerCase(),
         automatic_payment_methods: { enabled: true },
         metadata: params.metadata ?? {},
-      });
+      };
+      if (params.customer_id) {
+        createParams.customer = params.customer_id;
+        createParams.setup_future_usage = 'off_session';
+      }
+
+      const intent = await stripe.paymentIntents.create(createParams);
 
       logger.info('Stripe PaymentIntent created', {
         intentId: intent.id,
