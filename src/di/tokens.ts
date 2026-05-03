@@ -70,6 +70,7 @@ export const TOKENS = {
   // Card Challenge
   CardChallengeRepository: Symbol.for('ICardChallengeRepository'),
   MicroAuthProvider: Symbol.for('IMicroAuthProvider'),
+  BuyerCardChallengeProxy: Symbol.for('IBuyerCardChallengeProxy'),
 
   // Price Match
   PriceMatchRepository: Symbol.for('IPriceMatchRepository'),

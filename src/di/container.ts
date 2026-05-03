@@ -73,6 +73,7 @@ import { SupabaseVerificationCodeAdapter } from '../infra/verification/supabase-
 // Card Challenge adapters
 import { SupabaseCardChallengeRepository } from '../infra/card-challenge/supabase-card-challenge.repository.js';
 import { StubMicroAuthAdapter } from '../infra/card-challenge/stub-micro-auth.adapter.js';
+import { SupabaseBuyerCardChallengeProxyAdapter } from '../infra/card-challenge/supabase-buyer-card-challenge-proxy.adapter.js';
 
 // Price Match adapters
 import { SupabasePriceMatchRepository } from '../infra/price-match/supabase-price-match.repository.js';
@@ -376,6 +377,7 @@ container.register(TOKENS.VerificationCodeService, { useClass: SupabaseVerificat
 // --- Card Challenge ---
 container.register(TOKENS.CardChallengeRepository, { useClass: SupabaseCardChallengeRepository });
 container.register(TOKENS.MicroAuthProvider, { useClass: StubMicroAuthAdapter });
+container.register(TOKENS.BuyerCardChallengeProxy, { useClass: SupabaseBuyerCardChallengeProxyAdapter });
 
 // --- Price Match ---
 container.register(TOKENS.PriceMatchRepository, { useClass: SupabasePriceMatchRepository });

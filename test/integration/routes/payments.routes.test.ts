@@ -3,7 +3,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import Fastify from 'fastify';
 import type { FastifyInstance } from 'fastify';
 import { container } from 'tsyringe';
-import { UC_TOKENS, TOKENS } from '../../../src/di/tokens.js';
+import { TOKENS, UC_TOKENS } from '../../../src/di/tokens.js';
+import type { IBuyerCardChallengeProxy } from '../../../src/core/ports/buyer-card-challenge-proxy.port.js';
 
 vi.mock('../../../src/http/middleware/rate-limit.guard.js', () => ({
   createRateLimitGuard: () => async () => {},
@@ -22,6 +23,14 @@ describe('Payment Routes (Guest-safe)', () => {
     container.register(UC_TOKENS.CapturePayment, {
       useValue: { execute: vi.fn().mockResolvedValue(mockCaptureResult) },
     });
+
+    const mockProxy: IBuyerCardChallengeProxy = {
+      forward: vi.fn().mockResolvedValue({
+        status: 200,
+        payload: { success: true, status: 'requires_card_challenge' },
+      }),
+    };
+    container.register(TOKENS.BuyerCardChallengeProxy, { useValue: mockProxy });
 
     app = Fastify({ logger: false });
 
@@ -63,6 +72,49 @@ describe('Payment Routes (Guest-safe)', () => {
       });
 
       expect(response.statusCode).toBe(400);
+    });
+  });
+
+  describe('POST /payments/card-challenge', () => {
+    it('proxies whitelist body and returns upstream status + JSON', async () => {
+      const orderId = '550e8400-e29b-41d4-a716-446655440001';
+      const response = await app.inject({
+        method: 'POST',
+        url: '/payments/card-challenge',
+        payload: {
+          action: 'start-challenge',
+          order_id: orderId,
+          payment_intent_id: 'pi_challenge_abc',
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const proxy = container.resolve<IBuyerCardChallengeProxy>(TOKENS.BuyerCardChallengeProxy);
+      expect(proxy.forward).toHaveBeenCalledTimes(1);
+      const proxyReq = (proxy.forward as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      expect(proxyReq.body.action).toBe('start-challenge');
+      expect(proxyReq.body.order_id).toBe(orderId);
+      expect(proxyReq.body.payment_intent_id).toBe('pi_challenge_abc');
+      const body = JSON.parse(response.body);
+      expect(body.success).toBe(true);
+      expect(body.status).toBe('requires_card_challenge');
+    });
+
+    it('rejects unexpected fields (whitelist)', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/payments/card-challenge',
+        payload: {
+          action: 'verify',
+          order_id: '550e8400-e29b-41d4-a716-446655440002',
+          amount_minor: 99,
+          extra: true,
+        },
+      });
+
+      expect(response.statusCode).toBe(400);
+      const proxy = container.resolve<IBuyerCardChallengeProxy>(TOKENS.BuyerCardChallengeProxy);
+      expect(proxy.forward).not.toHaveBeenCalled();
     });
   });
 
