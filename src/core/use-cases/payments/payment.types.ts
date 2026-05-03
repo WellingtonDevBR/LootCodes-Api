@@ -89,6 +89,7 @@ export interface FulfillmentResult {
 export interface CapturePaymentDto {
   payment_intent_id: string;
   order_id?: string;
+  provider?: 'stripe' | 'paypal';
 }
 
 export interface CaptureResult {

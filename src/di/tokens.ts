@@ -83,7 +83,6 @@ export const TOKENS = {
   PaymentVerifier: Symbol.for('IPaymentVerifier'),
   RiskAssessor: Symbol.for('IRiskAssessor'),
   FulfillmentService: Symbol.for('IFulfillmentService'),
-  PaymentCapturer: Symbol.for('IPaymentCapturer'),
 
   // Webhooks
   WebhookVerifier: Symbol.for('IWebhookVerifier'),

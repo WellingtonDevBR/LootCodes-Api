@@ -20,6 +20,7 @@ export const capturePaymentBodySchema = {
   properties: {
     payment_intent_id: { type: 'string', minLength: 1, maxLength: 255 },
     order_id: { type: 'string', format: 'uuid' },
+    provider: { type: 'string', enum: ['stripe', 'paypal'] },
   },
   additionalProperties: false,
 } as const;

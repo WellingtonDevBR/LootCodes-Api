@@ -83,7 +83,6 @@ import { SupabasePriceMatchRepository } from '../infra/price-match/supabase-pric
 import { StripePaymentVerifierAdapter } from '../infra/payments/stripe-payment-verifier.adapter.js';
 import { SupabaseRiskAssessorAdapter } from '../infra/payments/supabase-risk-assessor.adapter.js';
 import { SupabaseFulfillmentAdapter } from '../infra/payments/supabase-fulfillment.adapter.js';
-import { StripePaymentCapturerAdapter } from '../infra/payments/stripe-payment-capturer.adapter.js';
 import { CompositeWebhookVerifierAdapter } from '../infra/payments/composite-webhook-verifier.adapter.js';
 import { SupabaseWebhookHandlerAdapter } from '../infra/payments/supabase-webhook-handler.adapter.js';
 
@@ -399,7 +398,6 @@ container.register(TOKENS.PriceMatchRepository, { useClass: SupabasePriceMatchRe
 container.register(TOKENS.PaymentVerifier, { useClass: StripePaymentVerifierAdapter });
 container.register(TOKENS.RiskAssessor, { useClass: SupabaseRiskAssessorAdapter });
 container.register(TOKENS.FulfillmentService, { useClass: SupabaseFulfillmentAdapter });
-container.register(TOKENS.PaymentCapturer, { useClass: StripePaymentCapturerAdapter });
 
 // --- Webhooks ---
 container.register(TOKENS.WebhookVerifier, { useClass: CompositeWebhookVerifierAdapter });
