@@ -218,6 +218,7 @@ import {
   MockPaymentProviderFactory,
   MockPaymentCapturerFactory,
   MockPaymentVerifierFactory,
+  MockStorageProvider,
 } from './mock-ports.js';
 
 export interface TestMocks {
@@ -277,6 +278,7 @@ export interface TestMocks {
   paymentProviderFactory: MockPaymentProviderFactory;
   paymentCapturerFactory: MockPaymentCapturerFactory;
   paymentVerifierFactory: MockPaymentVerifierFactory;
+  storageProvider: MockStorageProvider;
 }
 
 function setTestEnv() {
@@ -351,6 +353,7 @@ function registerMocks(): TestMocks {
     paymentProviderFactory: new MockPaymentProviderFactory(),
     paymentCapturerFactory: undefined as unknown as MockPaymentCapturerFactory,
     paymentVerifierFactory: undefined as unknown as MockPaymentVerifierFactory,
+    storageProvider: new MockStorageProvider(),
   };
 
   mocks.paymentCapturerFactory = new MockPaymentCapturerFactory(mocks.paymentCapturer);
@@ -386,6 +389,9 @@ function registerMocks(): TestMocks {
   container.register(TOKENS.PromoCodeValidator, { useValue: mocks.promoCodeValidator });
   container.register(TOKENS.CartValidator, { useValue: mocks.cartValidator });
   container.register(TOKENS.CustomerResolver, { useValue: mocks.customerResolver });
+
+  // Storage
+  container.register(TOKENS.StorageProvider, { useValue: mocks.storageProvider });
 
   // Support
   container.register(TOKENS.SupportTicketRepository, { useValue: mocks.supportTicketRepo });

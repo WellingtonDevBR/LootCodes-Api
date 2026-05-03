@@ -1,7 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { container } from 'tsyringe';
 import { UC_TOKENS } from '../../di/tokens.js';
-import type { CreateTicketUseCase } from '../../core/use-cases/support/create-ticket.use-case.js';
 import type { GetTicketUseCase } from '../../core/use-cases/support/get-ticket.use-case.js';
 import type { GetUserTicketsUseCase } from '../../core/use-cases/support/get-user-tickets.use-case.js';
 import type { AddMessageUseCase } from '../../core/use-cases/support/add-message.use-case.js';
@@ -9,6 +8,7 @@ import type { UpdateStatusUseCase } from '../../core/use-cases/support/update-st
 import type { SubmitFeedbackUseCase } from '../../core/use-cases/support/submit-feedback.use-case.js';
 import type { GetVerificationTicketsUseCase } from '../../core/use-cases/support/get-verification-tickets.use-case.js';
 import type { UploadAttachmentUseCase } from '../../core/use-cases/support/upload-attachment.use-case.js';
+import type { CreateTicketUseCase } from '../../core/use-cases/support/create-ticket.use-case.js';
 import type { CreateTicketDto, AddMessageDto, TicketFeedbackDto } from '../../core/use-cases/support/support.types.js';
 import type { IAttachmentStorage } from '../../core/ports/attachment-storage.port.js';
 import { TOKENS } from '../../di/tokens.js';
@@ -17,6 +17,7 @@ import { ValidationError } from '../../core/errors/domain-errors.js';
 import {
   createTicketBodySchema,
   ticketNumberParamsSchema,
+  ticketDetailQuerySchema,
   addMessageBodySchema,
   updateStatusBodySchema,
   reopenTicketBodySchema,
@@ -64,18 +65,22 @@ export async function supportRoutes(app: FastifyInstance) {
     },
   );
 
-  app.get<{ Params: { ticketNumber: string } }>(
+  app.get<{ Params: { ticketNumber: string }; Querystring: { email?: string } }>(
     '/:ticketNumber',
     {
       preHandler: [optionalAuthGuard],
-      schema: { params: ticketNumberParamsSchema },
+      schema: { params: ticketNumberParamsSchema, querystring: ticketDetailQuerySchema },
     },
     async (request, reply) => {
       const uc = container.resolve<GetTicketUseCase>(UC_TOKENS.GetTicket);
       const user = tryGetAuthUser(request);
 
-      const detail = await uc.execute(request.params.ticketNumber, user?.id);
-      return reply.send(detail);
+      const result = await uc.execute(request.params.ticketNumber, {
+        userId: user?.id,
+        userEmail: user?.email,
+        email: request.query.email,
+      });
+      return reply.send(result);
     },
   );
 
@@ -102,14 +107,14 @@ export async function supportRoutes(app: FastifyInstance) {
   app.post<{ Body: AddMessageDto }>(
     '/messages',
     {
-      preHandler: [authGuard],
+      preHandler: [optionalAuthGuard],
       schema: { body: addMessageBodySchema },
     },
     async (request, reply) => {
       const uc = container.resolve<AddMessageUseCase>(UC_TOKENS.AddMessage);
-      const user = getAuthUser(request);
+      const user = tryGetAuthUser(request);
 
-      await uc.execute(request.body, user.id);
+      await uc.execute(request.body as AddMessageDto & Record<string, unknown>, user?.id);
       return reply.send({ success: true });
     },
   );

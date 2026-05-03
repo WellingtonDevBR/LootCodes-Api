@@ -30,6 +30,9 @@ export const TOKENS = {
   CartValidator: Symbol.for('ICartValidator'),
   CustomerResolver: Symbol.for('ICustomerResolver'),
 
+  // Storage
+  StorageProvider: Symbol.for('IStorageProvider'),
+
   // Support
   SupportTicketRepository: Symbol.for('ISupportTicketRepository'),
   AttachmentStorage: Symbol.for('IAttachmentStorage'),

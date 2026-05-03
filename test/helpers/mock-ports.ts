@@ -6,6 +6,7 @@ import type { IRecaptchaVerifier, RecaptchaAssessment } from '../../src/core/por
 import type { IUserRepository } from '../../src/core/ports/user-repository.port.js';
 import type { IRateLimiter, RateLimitConfig, RateLimitCheckResult } from '../../src/core/ports/rate-limiter.port.js';
 import type { IIpBlocklist } from '../../src/core/ports/ip-blocklist.port.js';
+import type { IStorageProvider } from '../../src/core/ports/storage-provider.port.js';
 import type { IUserProfileRepository } from '../../src/core/ports/user-profile-repository.port.js';
 import type { IAvatarStorage } from '../../src/core/ports/avatar-storage.port.js';
 import type { ISessionRepository } from '../../src/core/ports/session-repository.port.js';
@@ -186,6 +187,14 @@ export class MockVerificationCodeService implements IVerificationCodeService {
     _requestId: string,
   ): Promise<boolean> {
     return this.verifyReturns && code === '123456';
+  }
+}
+
+// ─── Storage ─────────────────────────────────────────────────────
+
+export class MockStorageProvider implements IStorageProvider {
+  async createSignedUrl(_bucket: string, path: string, _expiresInSeconds: number): Promise<string> {
+    return `https://mock-storage.com/signed/${path}`;
   }
 }
 
@@ -374,7 +383,7 @@ export class MockSupportTicketRepository implements ISupportTicketRepository {
   public tickets: TicketDetail[] = [];
   async create(params: CreateTicketDto & { user_id?: string }): Promise<SupportTicket> {
     const ticket: SupportTicket = { id: `ticket-${Date.now()}`, ticket_number: `T-${Date.now()}`, user_id: params.user_id, subject: params.subject, status: 'open', created_at: new Date().toISOString() };
-    this.tickets.push({ ticket, messages: [{ id: `msg-${Date.now()}`, ticket_id: ticket.id, sender_type: 'customer', message: params.message, created_at: new Date().toISOString() }] });
+    this.tickets.push({ ticket, messages: [{ id: `msg-${Date.now()}`, ticket_id: ticket.id, sender_type: 'customer', message: params.message, created_at: new Date().toISOString() }], attachments: [] });
     return ticket;
   }
   async findByNumber(ticketNumber: string): Promise<TicketDetail | null> { return this.tickets.find(t => t.ticket.ticket_number === ticketNumber) ?? null; }
@@ -393,6 +402,10 @@ export class MockSupportTicketRepository implements ISupportTicketRepository {
   async submitFeedback(_ticketId: string, _feedback: TicketFeedbackDto): Promise<void> {}
   async getVerificationTicketsForOrder(_orderId: string): Promise<SupportTicket[]> { return []; }
   async findVerificationTicketForOrder(_orderId: string, _ticketTypes: string[]): Promise<SupportTicket | null> { return null; }
+  async autoLinkUser(ticketId: string, userId: string): Promise<void> {
+    const detail = this.tickets.find(t => t.ticket.id === ticketId);
+    if (detail) detail.ticket.user_id = userId;
+  }
 }
 
 export class MockAttachmentStorage implements IAttachmentStorage {

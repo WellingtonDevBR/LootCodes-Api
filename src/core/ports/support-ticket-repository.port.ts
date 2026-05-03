@@ -10,4 +10,5 @@ export interface ISupportTicketRepository {
   submitFeedback(ticketId: string, feedback: TicketFeedbackDto): Promise<void>;
   getVerificationTicketsForOrder(orderId: string): Promise<SupportTicket[]>;
   findVerificationTicketForOrder(orderId: string, ticketTypes: string[]): Promise<SupportTicket | null>;
+  autoLinkUser(ticketId: string, userId: string): Promise<void>;
 }

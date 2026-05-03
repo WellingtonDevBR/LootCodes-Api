@@ -5,8 +5,27 @@ export const createTicketBodySchema = {
     subject: { type: 'string', minLength: 1, maxLength: 200 },
     message: { type: 'string', minLength: 1, maxLength: 5000 },
     order_id: { type: 'string', format: 'uuid' },
+    order_item_id: { type: 'string', format: 'uuid' },
+    product_key_id: { type: 'string', format: 'uuid' },
     category: { type: 'string', maxLength: 50 },
+    ticket_type: { type: 'string', maxLength: 50 },
+    description: { type: 'string', maxLength: 5000 },
     guest_email: { type: 'string', format: 'email', maxLength: 254 },
+    email: { type: 'string', format: 'email', maxLength: 254 },
+    sender_name: { type: 'string', maxLength: 100 },
+    attachments: {
+      type: 'array',
+      maxItems: 10,
+      items: {
+        type: 'object',
+        properties: {
+          file_path: { type: 'string' },
+          original_filename: { type: 'string' },
+          file_size: { type: 'number' },
+          mime_type: { type: 'string' },
+        },
+      },
+    },
   },
   additionalProperties: false,
 } as const;
@@ -20,12 +39,35 @@ export const ticketNumberParamsSchema = {
   additionalProperties: false,
 } as const;
 
+export const ticketDetailQuerySchema = {
+  type: 'object',
+  properties: {
+    email: { type: 'string', maxLength: 254 },
+  },
+  additionalProperties: false,
+} as const;
+
 export const addMessageBodySchema = {
   type: 'object',
   required: ['ticket_number', 'message'],
   properties: {
     ticket_number: { type: 'string', minLength: 1, maxLength: 20 },
     message: { type: 'string', minLength: 1, maxLength: 5000 },
+    sender_email: { type: 'string', format: 'email', maxLength: 254 },
+    sender_name: { type: 'string', maxLength: 100 },
+    attachments: {
+      type: 'array',
+      maxItems: 10,
+      items: {
+        type: 'object',
+        properties: {
+          file_path: { type: 'string' },
+          original_filename: { type: 'string' },
+          file_size: { type: 'number' },
+          mime_type: { type: 'string' },
+        },
+      },
+    },
   },
   additionalProperties: false,
 } as const;

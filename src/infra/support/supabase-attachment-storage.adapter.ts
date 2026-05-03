@@ -1,6 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { TOKENS } from '../../di/tokens.js';
 import type { IDatabase } from '../../core/ports/database.port.js';
+import type { IStorageProvider } from '../../core/ports/storage-provider.port.js';
 import type { IAttachmentStorage } from '../../core/ports/attachment-storage.port.js';
 import { InternalError } from '../../core/errors/domain-errors.js';
 import { createLogger } from '../../shared/logger.js';
@@ -8,10 +9,14 @@ import { createLogger } from '../../shared/logger.js';
 const logger = createLogger('attachment-storage');
 
 const BUCKET = 'support-attachments';
+const SIGNED_URL_EXPIRY_SECONDS = 3600;
 
 @injectable()
 export class SupabaseAttachmentStorageAdapter implements IAttachmentStorage {
-  constructor(@inject(TOKENS.Database) private db: IDatabase) {}
+  constructor(
+    @inject(TOKENS.Database) private db: IDatabase,
+    @inject(TOKENS.StorageProvider) private storage: IStorageProvider,
+  ) {}
 
   async upload(
     ticketId: string,
@@ -31,8 +36,8 @@ export class SupabaseAttachmentStorageAdapter implements IAttachmentStorage {
     return this.doUpload(fileName, fileBuffer, mimeType);
   }
 
-  async getSignedUrl(_path: string): Promise<string> {
-    throw new InternalError('Signed URL generation not configured');
+  async getSignedUrl(path: string, bucket = BUCKET): Promise<string> {
+    return this.storage.createSignedUrl(bucket, path, SIGNED_URL_EXPIRY_SECONDS);
   }
 
   private async doUpload(path: string, fileBuffer: Buffer, mimeType: string): Promise<string> {
