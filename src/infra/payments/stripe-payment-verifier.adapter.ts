@@ -20,13 +20,14 @@ export class StripePaymentVerifierAdapter implements IPaymentVerifier {
       const intent = await this.paymentProvider.getPaymentIntent(dto.payment_intent_id);
 
       const last4 = intent.card_last4 ?? null;
+      const three_ds_authenticated = intent.three_ds_authenticated ?? false;
 
       switch (intent.status) {
         case 'succeeded':
-          return { status: 'fulfilled', order_id: dto.order_id, card_last4: last4 };
+          return { status: 'fulfilled', order_id: dto.order_id, card_last4: last4, three_ds_authenticated };
 
         case 'processing':
-          return { status: 'processing', order_id: dto.order_id, message: 'Payment is still processing', card_last4: last4 };
+          return { status: 'processing', order_id: dto.order_id, message: 'Payment is still processing', card_last4: last4, three_ds_authenticated };
 
         case 'requires_action':
         case 'requires_confirmation':

@@ -13,11 +13,13 @@ const logger = createLogger('stripe-payment-provider');
 
 function mapIntent(intent: Stripe.PaymentIntent): PaymentIntent {
   let card_last4: string | null = null;
+  let three_ds_authenticated = false;
   const lc = intent.latest_charge;
   if (typeof lc === 'object' && lc !== null && !Array.isArray(lc)) {
     const charge = lc as Stripe.Charge;
-    const pmd = charge.payment_method_details?.card;
-    card_last4 = pmd?.last4 ?? null;
+    const card = charge.payment_method_details?.card;
+    card_last4 = card?.last4 ?? null;
+    three_ds_authenticated = card?.three_d_secure?.result === 'authenticated';
   }
 
   return {
@@ -27,6 +29,7 @@ function mapIntent(intent: Stripe.PaymentIntent): PaymentIntent {
     amount_cents: intent.amount,
     currency: intent.currency.toUpperCase(),
     card_last4,
+    three_ds_authenticated,
   };
 }
 

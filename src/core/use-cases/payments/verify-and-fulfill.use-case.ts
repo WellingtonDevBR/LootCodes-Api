@@ -22,6 +22,7 @@ interface OrderRow {
   status: string;
   fulfillment_status: string | null;
   processing_status: string | null;
+  payment_provider: string | null;
   user_id: string | null;
   guest_email: string | null;
   delivery_email: string | null;
@@ -36,6 +37,7 @@ interface OrderRow {
 
 const ORDER_SELECT = [
   'id', 'order_number', 'status', 'fulfillment_status', 'processing_status',
+  'payment_provider',
   'user_id', 'guest_email', 'delivery_email', 'contact_email',
   'customer_full_name', 'session_id', 'total_amount',
   'fraud_score', 'risk_factors', 'risk_assessment_details',
@@ -122,6 +124,7 @@ export class VerifyAndFulfillUseCase {
     const paymentVerifier = this.verifierFactory.getVerifier(provider);
     const verification = await paymentVerifier.verifyPayment(dto);
     const cardLast4 = verification.card_last4 ?? null;
+    const threeDSAuthenticated = verification.three_ds_authenticated ?? false;
 
     if (verification.status === 'processing') {
       return {
@@ -232,6 +235,17 @@ export class VerifyAndFulfillUseCase {
       }
     }
 
+    const hasFirstTimeCard = workingFactors.includes('first_purchase_new_card');
+    if (!shouldBlock && shouldHold && threeDSAuthenticated && hasFirstTimeCard) {
+      const onlyFirstTimeCardHold = workingFactors.every(
+        (f) => f === 'first_purchase_new_card' || f.startsWith('recaptcha_'),
+      );
+      if (onlyFirstTimeCardHold) {
+        logger.info('3DS authenticated — bypassing first-time-card hold', { orderId, provider });
+        shouldHold = false;
+      }
+    }
+
     const unifiedRisk = {
       score: workingScore,
       level: effectiveLevel,
@@ -256,7 +270,7 @@ export class VerifyAndFulfillUseCase {
     }
 
     if (shouldHold) {
-      return this.handleSecurityReview(order, unifiedRisk, orderId, dto.payment_intent_id, cardLast4);
+      return this.handleSecurityReview(order, unifiedRisk, orderId, dto.payment_intent_id, cardLast4, provider);
     }
 
     return this.handleFulfillment(order, unifiedRisk, orderId, cardLast4);
@@ -268,6 +282,7 @@ export class VerifyAndFulfillUseCase {
     orderId: string,
     paymentIntentId: string,
     cardLast4: string | null,
+    provider: 'stripe' | 'paypal',
   ): Promise<PaymentVerificationResult> {
     const hasFirstTimeCard = risk.factors.includes('first_purchase_new_card');
     const customerEmail = this.resolveEmail(order);
@@ -374,12 +389,18 @@ export class VerifyAndFulfillUseCase {
         ? `Payment successful - Security review required. Support ticket #${ticketNumber} created.`
         : 'Payment successful - Security review required';
 
+    const verificationOptions: Array<'confirm_amount' | 'upload_id'> = hasFirstTimeCard
+      ? (provider === 'stripe' ? ['confirm_amount', 'upload_id'] : ['upload_id'])
+      : [];
+
     logger.info('Order held for review', {
       orderId,
       riskScore: risk.score,
       riskLevel: risk.level,
       status,
       hasTicket: !!ticketNumber,
+      provider,
+      options: verificationOptions,
     });
 
     return {
@@ -394,6 +415,7 @@ export class VerifyAndFulfillUseCase {
       card_last4: cardLast4,
       access_token: accessToken,
       guest_email: isGuest ? (customerEmail ?? undefined) : undefined,
+      ...(verificationOptions.length > 0 ? { options: verificationOptions } : {}),
     };
   }
 

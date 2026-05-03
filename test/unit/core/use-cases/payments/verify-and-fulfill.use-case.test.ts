@@ -12,6 +12,7 @@ const ORDER_ROW = {
   status: 'paid',
   fulfillment_status: null as string | null,
   processing_status: null as string | null,
+  payment_provider: 'stripe' as string | null,
   user_id: 'user-1',
   guest_email: null,
   delivery_email: null,
@@ -166,5 +167,76 @@ describe('VerifyAndFulfillUseCase', () => {
         'Mozilla/5.0',
       ),
     ).rejects.toThrow(ValidationError);
+  });
+
+  it('3DS-authenticated + first_purchase_new_card only → fulfills directly (no hold)', async () => {
+    mocks.paymentVerifier.result = { status: 'fulfilled', order_id: 'order-1', three_ds_authenticated: true };
+    mocks.riskAssessor.assessment = {
+      score: 45,
+      level: 'medium',
+      factors: ['first_purchase_new_card'],
+      should_hold: true,
+      should_block: false,
+    };
+    mocks.fulfillmentService.fulfillResult = { fulfilled: true, order_id: 'order-1', keys_delivered: 1 };
+
+    const result = await useCase.execute(
+      { payment_intent_id: 'pi_3ds_ok', order_id: 'order-1', ...RC },
+      '1.2.3.4',
+      'Mozilla/5.0',
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.status).toBe('verified');
+  });
+
+  it('non-3DS Stripe + first_purchase_new_card → requires_verification with both options', async () => {
+    mocks.paymentVerifier.result = { status: 'fulfilled', order_id: 'order-1', three_ds_authenticated: false };
+    mocks.riskAssessor.assessment = {
+      score: 45,
+      level: 'medium',
+      factors: ['first_purchase_new_card'],
+      should_hold: true,
+      should_block: false,
+    };
+    vi.spyOn(mocks.db, 'queryOne').mockResolvedValue({
+      ...ORDER_ROW,
+      payment_provider: 'stripe',
+    });
+
+    const result = await useCase.execute(
+      { payment_intent_id: 'pi_no3ds', order_id: 'order-1', ...RC },
+      '1.2.3.4',
+      'Mozilla/5.0',
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.status).toBe('requires_verification');
+    expect(result.options).toEqual(['confirm_amount', 'upload_id']);
+  });
+
+  it('non-3DS PayPal + first_purchase_new_card → requires_verification with upload_id only', async () => {
+    mocks.paymentVerifier.result = { status: 'fulfilled', order_id: 'order-1', three_ds_authenticated: false };
+    mocks.riskAssessor.assessment = {
+      score: 45,
+      level: 'medium',
+      factors: ['first_purchase_new_card'],
+      should_hold: true,
+      should_block: false,
+    };
+    vi.spyOn(mocks.db, 'queryOne').mockResolvedValue({
+      ...ORDER_ROW,
+      payment_provider: 'paypal',
+    });
+
+    const result = await useCase.execute(
+      { payment_intent_id: 'PP-no3ds', order_id: 'order-1', ...RC },
+      '1.2.3.4',
+      'Mozilla/5.0',
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.status).toBe('requires_verification');
+    expect(result.options).toEqual(['upload_id']);
   });
 });

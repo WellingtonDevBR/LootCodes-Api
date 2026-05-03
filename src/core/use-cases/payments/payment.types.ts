@@ -33,6 +33,8 @@ export interface ProviderPaymentStatus {
   order_id?: string;
   message?: string;
   card_last4?: string | null;
+  /** True when the charge was fully 3DS-authenticated (Stripe) or SCA-equivalent (PayPal wallet). */
+  three_ds_authenticated?: boolean;
 }
 
 /**
@@ -74,6 +76,8 @@ export interface PaymentVerificationResult {
   processing_reason?: string;
   /** Card last4 when available from Stripe (hold / UX parity with Edge) */
   card_last4?: string | null;
+  /** Verification options the frontend should offer ('confirm_amount' = card hold, 'upload_id' = ID upload). */
+  options?: Array<'confirm_amount' | 'upload_id'>;
 }
 
 export interface FulfillmentResult {

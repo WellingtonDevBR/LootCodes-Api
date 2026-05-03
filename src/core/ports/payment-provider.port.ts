@@ -13,6 +13,8 @@ export interface PaymentIntent {
   currency: string;
   /** Present when Stripe expanded `latest_charge` and card details exist. */
   card_last4?: string | null;
+  /** True when the charge was fully 3DS-authenticated (`three_d_secure.result === 'authenticated'`). */
+  three_ds_authenticated?: boolean;
 }
 
 export interface IPaymentProvider {

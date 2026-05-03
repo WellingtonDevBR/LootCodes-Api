@@ -30,15 +30,17 @@ export class PayPalPaymentVerifierAdapter implements IPaymentVerifier {
       const captureStatus = captures?.[0]?.status as string | undefined;
 
       const effectiveStatus = captureStatus ?? orderStatus;
+      const paymentSource = order.payment_source as Record<string, unknown> | undefined;
+      const threeDsAuth = this.extract3DSAuthenticated(paymentSource);
 
       switch (effectiveStatus) {
         case 'COMPLETED':
         case 'PARTIALLY_REFUNDED':
         case 'REFUNDED':
-          return { status: 'fulfilled', order_id: dto.order_id };
+          return { status: 'fulfilled', order_id: dto.order_id, three_ds_authenticated: threeDsAuth };
 
         case 'PENDING':
-          return { status: 'processing', order_id: dto.order_id, message: 'PayPal payment is pending' };
+          return { status: 'processing', order_id: dto.order_id, message: 'PayPal payment is pending', three_ds_authenticated: threeDsAuth };
 
         case 'APPROVED':
         case 'PAYER_ACTION_REQUIRED':
@@ -63,5 +65,36 @@ export class PayPalPaymentVerifierAdapter implements IPaymentVerifier {
       logger.error('PayPal verification failed', err, { paymentId: dto.payment_intent_id });
       return { status: 'error', order_id: dto.order_id, message: 'PayPal verification failed' };
     }
+  }
+
+  /**
+   * Determine if the PayPal order is strongly authenticated.
+   *
+   * - Wallet payments (payment_source.paypal): SCA-equivalent — PayPal's approval
+   *   UI enforces 2FA/biometric. Matches Edge Function's `strongAuthEquivalent`.
+   * - Card payments (payment_source.card): Check 3DS authentication_result.
+   *   Only `authentication_status === 'Y'` + `liability_shift === 'POSSIBLE'`
+   *   counts as authenticated (mirrors `extractThreeDSecureResult` in Edge Function).
+   */
+  private extract3DSAuthenticated(paymentSource: Record<string, unknown> | undefined): boolean {
+    if (!paymentSource) return false;
+
+    if (paymentSource.paypal && !paymentSource.card) return true;
+
+    const card = paymentSource.card as Record<string, unknown> | undefined;
+    if (!card) return false;
+
+    const authResult = card.authentication_result as Record<string, unknown> | undefined;
+    if (!authResult) return false;
+
+    const tds = authResult.three_d_secure as Record<string, unknown> | undefined;
+    const status = typeof tds?.authentication_status === 'string'
+      ? tds.authentication_status.toUpperCase()
+      : undefined;
+    const liabilityShift = typeof authResult.liability_shift === 'string'
+      ? authResult.liability_shift.toUpperCase()
+      : undefined;
+
+    return status === 'Y' && liabilityShift === 'POSSIBLE';
   }
 }
