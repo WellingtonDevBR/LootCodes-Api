@@ -1,7 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { TOKENS } from '../../../di/tokens.js';
 import type { IDatabase } from '../../ports/database.port.js';
-import type { IPaymentVerifier } from '../../ports/payment-verifier.port.js';
+import type { IPaymentVerifierFactory } from '../../ports/payment-provider-factory.port.js';
 import type { IRiskAssessor } from '../../ports/risk-assessor.port.js';
 import type { IFulfillmentService } from '../../ports/fulfillment-service.port.js';
 import type { ISupportTicketRepository } from '../../ports/support-ticket-repository.port.js';
@@ -76,11 +76,15 @@ function extractPersistedRiskGate(
   };
 }
 
+function inferProvider(id: string): 'stripe' | 'paypal' {
+  return id.startsWith('pi_') ? 'stripe' : 'paypal';
+}
+
 @injectable()
 export class VerifyAndFulfillUseCase {
   constructor(
     @inject(TOKENS.Database) private db: IDatabase,
-    @inject(TOKENS.PaymentVerifier) private paymentVerifier: IPaymentVerifier,
+    @inject(TOKENS.PaymentVerifierFactory) private verifierFactory: IPaymentVerifierFactory,
     @inject(TOKENS.RiskAssessor) private riskAssessor: IRiskAssessor,
     @inject(TOKENS.FulfillmentService) private fulfillment: IFulfillmentService,
     @inject(TOKENS.SupportTicketRepository) private ticketRepo: ISupportTicketRepository,
@@ -114,7 +118,9 @@ export class VerifyAndFulfillUseCase {
       };
     }
 
-    const verification = await this.paymentVerifier.verifyPayment(dto);
+    const provider = inferProvider(dto.payment_intent_id);
+    const paymentVerifier = this.verifierFactory.getVerifier(provider);
+    const verification = await paymentVerifier.verifyPayment(dto);
     const cardLast4 = verification.card_last4 ?? null;
 
     if (verification.status === 'processing') {

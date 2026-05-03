@@ -80,7 +80,6 @@ export const TOKENS = {
   PriceMatchRepository: Symbol.for('IPriceMatchRepository'),
 
   // Payment Verification + Capture
-  PaymentVerifier: Symbol.for('IPaymentVerifier'),
   RiskAssessor: Symbol.for('IRiskAssessor'),
   FulfillmentService: Symbol.for('IFulfillmentService'),
 

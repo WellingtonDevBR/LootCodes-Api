@@ -80,7 +80,6 @@ import { SupabaseBuyerCardChallengeProxyAdapter } from '../infra/card-challenge/
 import { SupabasePriceMatchRepository } from '../infra/price-match/supabase-price-match.repository.js';
 
 // Payment adapters (verification, capture, webhooks)
-import { StripePaymentVerifierAdapter } from '../infra/payments/stripe-payment-verifier.adapter.js';
 import { SupabaseRiskAssessorAdapter } from '../infra/payments/supabase-risk-assessor.adapter.js';
 import { SupabaseFulfillmentAdapter } from '../infra/payments/supabase-fulfillment.adapter.js';
 import { CompositeWebhookVerifierAdapter } from '../infra/payments/composite-webhook-verifier.adapter.js';
@@ -395,7 +394,6 @@ container.register(TOKENS.BuyerCardChallengeProxy, { useClass: SupabaseBuyerCard
 container.register(TOKENS.PriceMatchRepository, { useClass: SupabasePriceMatchRepository });
 
 // --- Payment Verification + Capture ---
-container.register(TOKENS.PaymentVerifier, { useClass: StripePaymentVerifierAdapter });
 container.register(TOKENS.RiskAssessor, { useClass: SupabaseRiskAssessorAdapter });
 container.register(TOKENS.FulfillmentService, { useClass: SupabaseFulfillmentAdapter });
 

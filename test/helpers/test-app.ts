@@ -350,10 +350,11 @@ function registerMocks(): TestMocks {
     customerResolver: new MockCustomerResolver(),
     paymentProviderFactory: new MockPaymentProviderFactory(),
     paymentCapturerFactory: undefined as unknown as MockPaymentCapturerFactory,
-    paymentVerifierFactory: new MockPaymentVerifierFactory(),
+    paymentVerifierFactory: undefined as unknown as MockPaymentVerifierFactory,
   };
 
   mocks.paymentCapturerFactory = new MockPaymentCapturerFactory(mocks.paymentCapturer);
+  mocks.paymentVerifierFactory = new MockPaymentVerifierFactory(mocks.paymentVerifier);
 
   // Infrastructure
   container.register(TOKENS.Database, { useValue: mocks.db });
@@ -432,7 +433,6 @@ function registerMocks(): TestMocks {
   container.register(TOKENS.PriceMatchRepository, { useValue: mocks.priceMatchRepo });
 
   // Payment Verification + Capture
-  container.register(TOKENS.PaymentVerifier, { useValue: mocks.paymentVerifier });
   container.register(TOKENS.RiskAssessor, { useValue: mocks.riskAssessor });
   container.register(TOKENS.FulfillmentService, { useValue: mocks.fulfillmentService });
 
