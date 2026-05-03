@@ -113,6 +113,15 @@ export const refreshAccessTokenBodySchema = {
   additionalProperties: false,
 } as const;
 
+export const productKeyIdParamsSchema = {
+  type: 'object',
+  required: ['productKeyId'],
+  properties: {
+    productKeyId: { type: 'string', format: 'uuid' },
+  },
+  additionalProperties: false,
+} as const;
+
 export const verificationTicketQuerystringSchema = {
   type: 'object',
   properties: {

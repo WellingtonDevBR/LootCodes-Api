@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { container } from 'tsyringe';
-import { UC_TOKENS } from '../../di/tokens.js';
+import { UC_TOKENS, TOKENS } from '../../di/tokens.js';
+import type { ISecurityHoldRepository } from '../../core/ports/security-hold-repository.port.js';
 import type { GetHoldUseCase } from '../../core/use-cases/security/get-hold.use-case.js';
 import type { GetHoldStatusUseCase } from '../../core/use-cases/security/get-hold-status.use-case.js';
 import type { UploadDocumentUseCase } from '../../core/use-cases/security/upload-document.use-case.js';
@@ -89,6 +90,50 @@ export async function securityRoutes(app: FastifyInstance) {
       const uc = container.resolve<UnlockAccountUseCase>(UC_TOKENS.UnlockAccount);
       const result = await uc.execute(request.body.token);
       return reply.send(result);
+    },
+  );
+
+  app.post<{ Body: { email: string } }>(
+    '/verification/check-rate-limit',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['email'],
+          properties: { email: { type: 'string', format: 'email' } },
+        },
+      },
+    },
+    async (request, reply) => {
+      const repo = container.resolve<ISecurityHoldRepository>(TOKENS.SecurityHoldRepository);
+      const allowed = await repo.checkVerificationRateLimit(
+        request.body.email.trim(),
+        'email',
+        'verification_submit',
+      );
+      return reply.send({ allowed });
+    },
+  );
+
+  app.post<{ Body: { email: string } }>(
+    '/verification/record-attempt',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['email'],
+          properties: { email: { type: 'string', format: 'email' } },
+        },
+      },
+    },
+    async (request, reply) => {
+      const repo = container.resolve<ISecurityHoldRepository>(TOKENS.SecurityHoldRepository);
+      await repo.recordVerificationAttempt(
+        request.body.email.trim(),
+        'email',
+        'verification_submit',
+      );
+      return reply.code(204).send();
     },
   );
 }

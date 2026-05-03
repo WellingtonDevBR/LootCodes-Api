@@ -1,4 +1,4 @@
-import type { Product, ProductVariant, ProductPageData, GalleryItem, FeaturedProduct, StockCheckItem, StockCheckResult } from '../use-cases/products/product.types.js';
+import type { Product, ProductVariant, ProductPageData, GalleryItem, FeaturedProduct, StockCheckItem, StockCheckResult, CardVariantRow } from '../use-cases/products/product.types.js';
 
 export interface IProductRepository {
   findBySlugRaw(slug: string): Promise<Record<string, unknown> | null>;
@@ -12,4 +12,5 @@ export interface IProductRepository {
   isVariantPurchasable(variantId: string, quantity: number): Promise<{ purchasable: boolean; reason?: string }>;
   getActivePromoHeader(): Promise<{ code: string; message: string; discount_text: string; expires_at: string } | null>;
   getTrustpilotData(): Promise<{ score: number; reviews_count: number; stars: number } | null>;
+  getCardVariantsBatch(productIds: string[]): Promise<CardVariantRow[]>;
 }

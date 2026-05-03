@@ -17,5 +17,7 @@ export interface ISecurityHoldRepository {
   submitResponse(holdId: string, dto: SubmitHoldResponseDto): Promise<void>;
   checkRateLimit(identifier: string, identifierType: string, actionType: string): Promise<boolean>;
   recordAttempt(identifier: string, identifierType: string, actionType: string): Promise<void>;
+  checkVerificationRateLimit(identifier: string, identifierType: string, actionType: string): Promise<boolean>;
+  recordVerificationAttempt(identifier: string, identifierType: string, actionType: string): Promise<void>;
   resolveByToken(token: string): Promise<{ success: boolean; error?: string }>;
 }

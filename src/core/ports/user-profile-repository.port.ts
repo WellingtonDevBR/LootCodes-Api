@@ -7,4 +7,5 @@ export interface IUserProfileRepository {
   restoreProfile(userId: string): Promise<void>;
   checkDeleted(userId: string): Promise<boolean>;
   getRole(userId: string): Promise<string | null>;
+  ensureDefaultRole(userId: string): Promise<void>;
 }

@@ -120,6 +120,9 @@ import { GetOrderUseCase } from '../core/use-cases/orders/get-order.use-case.js'
 import { GetOrderDetailUseCase } from '../core/use-cases/orders/get-order-detail.use-case.js';
 import { GetUserOrdersUseCase } from '../core/use-cases/orders/get-user-orders.use-case.js';
 import { GetUserOrdersForSupportUseCase } from '../core/use-cases/orders/get-user-orders-for-support.use-case.js';
+import { GetOrderForVerificationUseCase } from '../core/use-cases/orders/get-order-for-verification.use-case.js';
+import { GetKeysForProductKeyUseCase } from '../core/use-cases/orders/get-keys-for-product-key.use-case.js';
+import { GetOrderItemsForTicketUseCase } from '../core/use-cases/orders/get-order-items-for-ticket.use-case.js';
 import { ValidateAccessTokenUseCase } from '../core/use-cases/orders/validate-access-token.use-case.js';
 import { GenerateAccessTokenUseCase } from '../core/use-cases/orders/generate-access-token.use-case.js';
 import { RefreshAccessTokenUseCase } from '../core/use-cases/orders/refresh-access-token.use-case.js';
@@ -183,6 +186,7 @@ import { GetGalleryUseCase } from '../core/use-cases/products/catalog/get-galler
 import { GetFeaturedUseCase } from '../core/use-cases/products/catalog/get-featured.use-case.js';
 import { GetCompositeProductPageUseCase } from '../core/use-cases/products/catalog/get-composite-product-page.use-case.js';
 import { GetProductUserContextUseCase } from '../core/use-cases/products/catalog/get-product-user-context.use-case.js';
+import { GetCardVariantsBatchUseCase } from '../core/use-cases/products/catalog/get-card-variants-batch.use-case.js';
 
 // --- Products: stock use cases ---
 import { CheckStockUseCase } from '../core/use-cases/products/stock/check-stock.use-case.js';
@@ -435,6 +439,9 @@ container.register(UC_TOKENS.GetOrder, { useClass: GetOrderUseCase });
 container.register(UC_TOKENS.GetOrderDetail, { useClass: GetOrderDetailUseCase });
 container.register(UC_TOKENS.GetUserOrders, { useClass: GetUserOrdersUseCase });
 container.register(UC_TOKENS.GetUserOrdersForSupport, { useClass: GetUserOrdersForSupportUseCase });
+container.register(UC_TOKENS.GetOrderForVerification, { useClass: GetOrderForVerificationUseCase });
+container.register(UC_TOKENS.GetKeysForProductKey, { useClass: GetKeysForProductKeyUseCase });
+container.register(UC_TOKENS.GetOrderItemsForTicket, { useClass: GetOrderItemsForTicketUseCase });
 container.register(UC_TOKENS.ValidateAccessToken, { useClass: ValidateAccessTokenUseCase });
 container.register(UC_TOKENS.GenerateAccessToken, { useClass: GenerateAccessTokenUseCase });
 container.register(UC_TOKENS.RefreshAccessToken, { useClass: RefreshAccessTokenUseCase });
@@ -498,6 +505,7 @@ container.register(UC_TOKENS.GetGallery, { useClass: GetGalleryUseCase });
 container.register(UC_TOKENS.GetFeatured, { useClass: GetFeaturedUseCase });
 container.register(UC_TOKENS.GetCompositeProductPage, { useClass: GetCompositeProductPageUseCase });
 container.register(UC_TOKENS.GetProductUserContext, { useClass: GetProductUserContextUseCase });
+container.register(UC_TOKENS.GetCardVariantsBatch, { useClass: GetCardVariantsBatchUseCase });
 
 // --- Products: Stock Use Cases ---
 container.register(UC_TOKENS.CheckStock, { useClass: CheckStockUseCase });

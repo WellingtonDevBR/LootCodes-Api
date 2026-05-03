@@ -58,7 +58,7 @@ import type { Category, LocalizedPrice, ExcludedCountry, RestrictedVariant, Rest
 import type { SearchResult } from '../../src/core/use-cases/search/search.types.js';
 
 import type { UserProfile, UpsertProfileDto, UserSession, UpsertSessionDto } from '../../src/core/use-cases/profile/profile.types.js';
-import type { Order, OrderItem, OrderDetail, ProductKey, KeyViewLog, KeyAccessAttemptLog, OrderAccessToken, PaginationParams, UserOrderWithRelations } from '../../src/core/use-cases/orders/order.types.js';
+import type { Order, OrderItem, OrderDetail, ProductKey, KeyViewLog, KeyAccessAttemptLog, OrderAccessToken, PaginationParams, UserOrderWithRelations, OrderForVerification, OrderItemForTicket, UserOrderForSupport, ProductKeyLookup } from '../../src/core/use-cases/orders/order.types.js';
 import type {
   CartItem,
   PromoValidationResult,
@@ -69,7 +69,7 @@ import type { SupportTicket, SupportTicketWithMessages, TicketMessage, TicketDet
 import type { LibraryEntry, LibraryProductDetails, SetLibraryStatusDto, UpdateLibraryEntryDto } from '../../src/core/use-cases/library/library.types.js';
 import type { Notification, NotificationPreferences, UpdatePreferencesDto } from '../../src/core/use-cases/notifications/notification.types.js';
 import type { Review, ProductRating, CreateReviewDto, ReviewEligibility, ReviewPaginationParams } from '../../src/core/use-cases/reviews/review.types.js';
-import type { ProductPageData, Product, ProductVariant, GalleryItem, FeaturedProduct, StockCheckItem, StockCheckResult, Platform, Region, Genre, FAQ } from '../../src/core/use-cases/products/product.types.js';
+import type { ProductPageData, Product, ProductVariant, GalleryItem, FeaturedProduct, StockCheckItem, StockCheckResult, Platform, Region, Genre, FAQ, CardVariantRow } from '../../src/core/use-cases/products/product.types.js';
 import type { PageViewEvent, ActivityEvent, CartEvent, SessionOutcomeDto, SessionUpsertDto, GeoLookupResult, ProductViewDurationDto, SearchEventDto } from '../../src/core/use-cases/analytics/analytics.types.js';
 import type { WalletBalance, WalletLedgerEntry, LedgerPaginationParams, OrderEarnings } from '../../src/core/use-cases/wallet/wallet.types.js';
 import type { ReferralMe, ReferralListPage, ReferralLeaderboardEntry, ListReferralsParams, GetLeaderboardParams, OpenDisputeParams, OpenDisputeResult } from '../../src/core/use-cases/referrals/referral.types.js';
@@ -209,6 +209,7 @@ export class MockUserProfileRepository implements IUserProfileRepository {
   }
   async checkDeleted(userId: string): Promise<boolean> { return !this.profiles.has(userId); }
   async getRole(_userId: string): Promise<string | null> { return 'user'; }
+  async ensureDefaultRole(_userId: string): Promise<void> {}
 }
 
 export class MockAvatarStorage implements IAvatarStorage {
@@ -248,6 +249,11 @@ export class MockOrderRepository implements IOrderRepository {
   async getOrderAccessDetail(_orderId: string): Promise<import('../../src/core/use-cases/orders/order.types.js').OrderAccessResponse | null> { return null; }
   async getKeyViewLogs(_orderId: string, _keyIds: string[]): Promise<Array<{ key_id: string; viewed_at: string }>> { return []; }
   async getOrderAccessTokenMetadata(_token: string, _orderId: string): Promise<import('../../src/core/use-cases/orders/order.types.js').OrderAccessTokenMetadata | null> { return null; }
+  async findForVerification(_orderId: string): Promise<OrderForVerification | null> { return null; }
+  async getProductKeyLookup(_productKeyId: string): Promise<ProductKeyLookup | null> { return null; }
+  async findOrderItemId(_orderId: string, _variantId: string): Promise<string | null> { return null; }
+  async getOrderItemsForTicket(_orderId: string): Promise<OrderItemForTicket[]> { return []; }
+  async getUserOrdersForSupport(_userId: string): Promise<UserOrderForSupport[]> { return []; }
 }
 
 export class MockProductKeyRepository implements IProductKeyRepository {
@@ -391,6 +397,7 @@ export class MockSupportTicketRepository implements ISupportTicketRepository {
 
 export class MockAttachmentStorage implements IAttachmentStorage {
   async upload(_ticketId: string, _fileBuffer: Buffer, fileName: string): Promise<string> { return `https://mock-storage.com/attachments/${fileName}`; }
+  async uploadPreTicket(_fileBuffer: Buffer, fileName: string): Promise<string> { return fileName; }
   async getSignedUrl(path: string): Promise<string> { return `https://mock-storage.com/signed/${path}`; }
 }
 
@@ -522,6 +529,9 @@ export class MockProductRepository implements IProductRepository {
   async getTrustpilotData(): Promise<{ score: number; reviews_count: number; stars: number } | null> {
     return null;
   }
+  async getCardVariantsBatch(_productIds: string[]): Promise<CardVariantRow[]> {
+    return [];
+  }
 }
 
 export class MockReferenceDataRepository implements IReferenceDataRepository {
@@ -628,6 +638,8 @@ export class MockSecurityHoldRepository implements ISecurityHoldRepository {
   async submitResponse(_holdId: string, _dto: SubmitHoldResponseDto): Promise<void> {}
   async checkRateLimit(_identifier: string, _identifierType: string, _actionType: string): Promise<boolean> { return !this.rateLimited; }
   async recordAttempt(_identifier: string, _identifierType: string, _actionType: string): Promise<void> {}
+  async checkVerificationRateLimit(_identifier: string, _identifierType: string, _actionType: string): Promise<boolean> { return !this.rateLimited; }
+  async recordVerificationAttempt(_identifier: string, _identifierType: string, _actionType: string): Promise<void> {}
   async resolveByToken(_token: string): Promise<{ success: boolean; error?: string }> { return this.resolveResult; }
   async createHold(_params: import('../../src/core/ports/security-hold-repository.port.js').CreateSecurityHoldParams): Promise<{ id: string }> { return { id: `hold-${Date.now()}` }; }
 }

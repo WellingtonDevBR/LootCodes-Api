@@ -122,6 +122,9 @@ export const UC_TOKENS = {
   GetOrderDetail: Symbol.for('GetOrderDetailUseCase'),
   GetUserOrders: Symbol.for('GetUserOrdersUseCase'),
   GetUserOrdersForSupport: Symbol.for('GetUserOrdersForSupportUseCase'),
+  GetOrderForVerification: Symbol.for('GetOrderForVerificationUseCase'),
+  GetKeysForProductKey: Symbol.for('GetKeysForProductKeyUseCase'),
+  GetOrderItemsForTicket: Symbol.for('GetOrderItemsForTicketUseCase'),
   ValidateAccessToken: Symbol.for('ValidateAccessTokenUseCase'),
   GenerateAccessToken: Symbol.for('GenerateAccessTokenUseCase'),
   RefreshAccessToken: Symbol.for('RefreshAccessTokenUseCase'),
@@ -188,6 +191,8 @@ export const UC_TOKENS = {
   GetFeatured: Symbol.for('GetFeaturedUseCase'),
   GetCompositeProductPage: Symbol.for('GetCompositeProductPageUseCase'),
   GetProductUserContext: Symbol.for('GetProductUserContextUseCase'),
+
+  GetCardVariantsBatch: Symbol.for('GetCardVariantsBatchUseCase'),
 
   // Products — stock
   CheckStock: Symbol.for('CheckStockUseCase'),

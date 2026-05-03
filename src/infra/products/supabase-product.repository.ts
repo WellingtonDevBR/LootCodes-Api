@@ -2,7 +2,7 @@ import { injectable, inject } from 'tsyringe';
 import { TOKENS } from '../../di/tokens.js';
 import type { IDatabase } from '../../core/ports/database.port.js';
 import type { IProductRepository } from '../../core/ports/product-repository.port.js';
-import type { Product, ProductVariant, ProductPageData, GalleryItem, FeaturedProduct, StockCheckItem, StockCheckResult } from '../../core/use-cases/products/product.types.js';
+import type { Product, ProductVariant, ProductPageData, GalleryItem, FeaturedProduct, StockCheckItem, StockCheckResult, CardVariantRow } from '../../core/use-cases/products/product.types.js';
 import { createLogger } from '../../shared/logger.js';
 
 const logger = createLogger('supabase-product-repository');
@@ -104,5 +104,12 @@ export class SupabaseProductRepository implements IProductRepository {
       select: 'value',
     });
     return row?.value ?? null;
+  }
+
+  async getCardVariantsBatch(productIds: string[]): Promise<CardVariantRow[]> {
+    const rows = await this.db.rpc<CardVariantRow[]>('get_product_card_variants', {
+      p_product_ids: productIds,
+    });
+    return Array.isArray(rows) ? rows : [];
   }
 }

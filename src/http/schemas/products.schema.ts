@@ -134,3 +134,17 @@ export const geoRestrictedRegionsQuerySchema = {
     countryCode: { type: 'string', minLength: 2, maxLength: 2 },
   },
 } as const;
+
+export const cardVariantsBatchBodySchema = {
+  type: 'object',
+  required: ['productIds'],
+  properties: {
+    productIds: {
+      type: 'array',
+      minItems: 1,
+      maxItems: 50,
+      items: { type: 'string', format: 'uuid' },
+    },
+  },
+  additionalProperties: false,
+} as const;

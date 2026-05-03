@@ -2,7 +2,11 @@ import { injectable, inject } from 'tsyringe';
 import { TOKENS } from '../../di/tokens.js';
 import type { IDatabase } from '../../core/ports/database.port.js';
 import type { IOrderRepository } from '../../core/ports/order-repository.port.js';
-import type { Order, OrderItem, OrderDetail, PaginationParams, UserOrderWithRelations, OrderAccessResponse, OrderAccessTokenMetadata } from '../../core/use-cases/orders/order.types.js';
+import type {
+  Order, OrderItem, OrderDetail, PaginationParams,
+  UserOrderWithRelations, OrderAccessResponse, OrderAccessTokenMetadata,
+  OrderForVerification, OrderItemForTicket, UserOrderForSupport, ProductKeyLookup,
+} from '../../core/use-cases/orders/order.types.js';
 
 const USER_ORDERS_SELECT = `
   id, order_number, status, fulfillment_status, refund_status, refunded_at,
@@ -21,6 +25,27 @@ const USER_ORDERS_SELECT = `
   order_item_price_adjustments(
     order_item_id, refund_cents, original_cents,
     adjusted_cents, currency, created_at
+  )
+`.replace(/\s+/g, ' ').trim();
+
+const ORDER_VERIFICATION_SELECT =
+  'id, order_number, total_amount, currency, status, fulfillment_status, delivery_email, guest_email, user_id, created_at, keys_revealed_at, refund_status, processing_status, customer_full_name, billing_country_code, ip_country';
+
+const ORDER_ITEMS_FOR_TICKET_SELECT = `
+  id,
+  order_items(
+    id, quantity,
+    products(name),
+    product_variants(variant_platforms(product_platforms(name)))
+  )
+`.replace(/\s+/g, ' ').trim();
+
+const USER_ORDERS_FOR_SUPPORT_SELECT = `
+  id, order_number, created_at, total_amount, currency,
+  order_items(
+    id, quantity,
+    products(name),
+    product_variants(variant_platforms(product_platforms(name)))
   )
 `.replace(/\s+/g, ' ').trim();
 
@@ -127,5 +152,78 @@ export class SupabaseOrderRepository implements IOrderRepository {
     } catch {
       return null;
     }
+  }
+
+  async findForVerification(orderId: string): Promise<OrderForVerification | null> {
+    return this.db.queryOne<OrderForVerification>('orders', {
+      select: ORDER_VERIFICATION_SELECT,
+      eq: [['id', orderId]],
+    });
+  }
+
+  async getProductKeyLookup(productKeyId: string): Promise<ProductKeyLookup | null> {
+    return this.db.queryOne<ProductKeyLookup>('product_keys', {
+      select: 'order_id, variant_id',
+      eq: [['id', productKeyId]],
+    });
+  }
+
+  async findOrderItemId(orderId: string, variantId: string): Promise<string | null> {
+    const row = await this.db.queryOne<{ id: string }>('order_items', {
+      select: 'id',
+      eq: [['order_id', orderId], ['variant_id', variantId]],
+    });
+    return row?.id ?? null;
+  }
+
+  async getOrderItemsForTicket(orderId: string): Promise<OrderItemForTicket[]> {
+    const rows = await this.db.query<Record<string, unknown>>('orders', {
+      select: ORDER_ITEMS_FOR_TICKET_SELECT,
+      eq: [['id', orderId]],
+      limit: 1,
+    });
+
+    const order = rows[0];
+    if (!order?.order_items) return [];
+
+    return (order.order_items as Record<string, unknown>[]).map((item) => {
+      const vp = (item.product_variants as Record<string, unknown>)
+        ?.variant_platforms as Array<{ product_platforms?: { name?: string } }> | undefined;
+      const platformNames = vp?.map(v => v.product_platforms?.name).filter(Boolean);
+      return {
+        id: item.id as string,
+        product_name: ((item.products as Record<string, unknown>)?.name as string) || 'Unknown Product',
+        platform_name: platformNames?.length ? platformNames.join(' / ') : '',
+        quantity: (item.quantity as number) ?? 0,
+      };
+    });
+  }
+
+  async getUserOrdersForSupport(userId: string): Promise<UserOrderForSupport[]> {
+    const rows = await this.db.query<Record<string, unknown>>('orders', {
+      select: USER_ORDERS_FOR_SUPPORT_SELECT,
+      eq: [['user_id', userId]],
+      order: { column: 'created_at', ascending: false },
+      limit: 20,
+    });
+
+    return rows.map((order) => ({
+      id: order.id as string,
+      order_number: order.order_number as string,
+      created_at: order.created_at as string,
+      total_amount: order.total_amount as number,
+      currency: order.currency as string,
+      order_items: ((order.order_items as Record<string, unknown>[]) || []).map((item) => {
+        const vp = (item.product_variants as Record<string, unknown>)
+          ?.variant_platforms as Array<{ product_platforms?: { name?: string } }> | undefined;
+        const platformNames = vp?.map(v => v.product_platforms?.name).filter(Boolean);
+        return {
+          id: item.id as string,
+          product_name: ((item.products as Record<string, unknown>)?.name as string) || 'Unknown Product',
+          platform_name: platformNames?.length ? platformNames.join(' / ') : '',
+          quantity: (item.quantity as number) ?? 0,
+        };
+      }),
+    }));
   }
 }

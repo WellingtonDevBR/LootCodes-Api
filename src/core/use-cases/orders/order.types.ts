@@ -184,3 +184,43 @@ export interface OrderAccessKey {
   first_revealed_at: string | null;
   key_state: string;
 }
+
+export interface OrderForVerification {
+  id: string;
+  order_number: string;
+  total_amount: number;
+  currency: string;
+  status: string;
+  fulfillment_status: string;
+  delivery_email: string;
+  guest_email: string | null;
+  user_id: string | null;
+  created_at: string;
+  keys_revealed_at: string | null;
+  refund_status: string | null;
+  processing_status: string | null;
+  customer_full_name: string | null;
+  billing_country_code: string | null;
+  ip_country: string | null;
+}
+
+export interface OrderItemForTicket {
+  id: string;
+  product_name: string;
+  platform_name: string;
+  quantity: number;
+}
+
+export interface UserOrderForSupport {
+  id: string;
+  order_number: string;
+  created_at: string;
+  total_amount: number;
+  currency: string;
+  order_items: OrderItemForTicket[];
+}
+
+export interface ProductKeyLookup {
+  order_id: string;
+  variant_id: string;
+}

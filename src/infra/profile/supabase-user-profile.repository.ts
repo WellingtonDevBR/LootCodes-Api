@@ -46,4 +46,12 @@ export class SupabaseUserProfileRepository implements IUserProfileRepository {
   async getRole(userId: string): Promise<string | null> {
     return this.db.rpc<string | null>('get_user_role', { p_user_id: userId });
   }
+
+  async ensureDefaultRole(userId: string): Promise<void> {
+    await this.db.upsert(
+      'user_roles',
+      { user_id: userId, role: 'user', is_active: true },
+      'user_id,role',
+    );
+  }
 }

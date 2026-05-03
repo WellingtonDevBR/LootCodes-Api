@@ -74,6 +74,31 @@ export class SupabaseSecurityHoldRepository implements ISecurityHoldRepository {
     });
   }
 
+  async checkVerificationRateLimit(
+    identifier: string,
+    identifierType: string,
+    actionType: string,
+  ): Promise<boolean> {
+    const result = await this.db.rpc<boolean>('check_verification_rate_limit', {
+      p_identifier: identifier,
+      p_identifier_type: identifierType,
+      p_action_type: actionType,
+    });
+    return result === true;
+  }
+
+  async recordVerificationAttempt(
+    identifier: string,
+    identifierType: string,
+    actionType: string,
+  ): Promise<void> {
+    await this.db.rpc('record_verification_attempt', {
+      p_identifier: identifier,
+      p_identifier_type: identifierType,
+      p_action_type: actionType,
+    });
+  }
+
   async resolveByToken(token: string): Promise<{ success: boolean; error?: string }> {
     logger.info('Resolving security hold by unlock token');
 

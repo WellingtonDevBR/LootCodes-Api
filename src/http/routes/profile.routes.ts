@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { container } from 'tsyringe';
-import { UC_TOKENS } from '../../di/tokens.js';
+import { UC_TOKENS, TOKENS } from '../../di/tokens.js';
 import type { GetProfileUseCase } from '../../core/use-cases/profile/get-profile.use-case.js';
 import type { UpdateProfileUseCase } from '../../core/use-cases/profile/update-profile.use-case.js';
 import type { DeleteAccountUseCase } from '../../core/use-cases/profile/delete-account.use-case.js';
@@ -115,6 +115,13 @@ export async function profileRoutes(app: FastifyInstance) {
       return reply.code(204).send();
     },
   );
+
+  app.post('/ensure-role', { preHandler: [authGuard] }, async (request, reply) => {
+    const { authUser } = request as unknown as AuthenticatedRequest;
+    const repo = container.resolve<import('../../core/ports/user-profile-repository.port.js').IUserProfileRepository>(TOKENS.UserProfileRepository);
+    await repo.ensureDefaultRole(authUser.id);
+    return reply.code(204).send();
+  });
 
   app.post(
     '/avatar',

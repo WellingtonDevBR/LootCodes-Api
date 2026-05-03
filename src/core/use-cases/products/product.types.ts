@@ -273,3 +273,18 @@ export interface RecommendationsBatch {
   also_viewed: RecommendedProduct[];
   bought_together: RecommendedProduct[];
 }
+
+export interface CardVariantRow {
+  product_id: string;
+  variant_id: string;
+  price_usd: number;
+  retail_price_usd: number | null;
+  release_date: string | null;
+  platform_name: string | null;
+  platform_code: string | null;
+  region_name: string | null;
+  region_code: string | null;
+  in_stock: boolean;
+  face_value: string | null;
+  product_type: string | null;
+}

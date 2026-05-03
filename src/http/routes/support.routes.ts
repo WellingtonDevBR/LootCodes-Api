@@ -10,6 +10,8 @@ import type { SubmitFeedbackUseCase } from '../../core/use-cases/support/submit-
 import type { GetVerificationTicketsUseCase } from '../../core/use-cases/support/get-verification-tickets.use-case.js';
 import type { UploadAttachmentUseCase } from '../../core/use-cases/support/upload-attachment.use-case.js';
 import type { CreateTicketDto, AddMessageDto, TicketFeedbackDto } from '../../core/use-cases/support/support.types.js';
+import type { IAttachmentStorage } from '../../core/ports/attachment-storage.port.js';
+import { TOKENS } from '../../di/tokens.js';
 import { authGuard } from '../middleware/auth.guard.js';
 import { ValidationError } from '../../core/errors/domain-errors.js';
 import {
@@ -214,6 +216,32 @@ export async function supportRoutes(app: FastifyInstance) {
         data.mimetype,
       );
       return reply.send({ url });
+    },
+  );
+
+  app.post(
+    '/pre-upload',
+    {
+      preHandler: [optionalAuthGuard],
+    },
+    async (request, reply) => {
+      const data = await request.file();
+      if (!data) {
+        throw new ValidationError('No file uploaded');
+      }
+
+      const allowedMimes = [
+        'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+        'application/pdf', 'text/plain',
+      ];
+      if (!allowedMimes.includes(data.mimetype)) {
+        throw new ValidationError('Invalid file type');
+      }
+
+      const fileBuffer = await data.toBuffer();
+      const storage = container.resolve<IAttachmentStorage>(TOKENS.AttachmentStorage);
+      const filePath = await storage.uploadPreTicket(fileBuffer, data.filename, data.mimetype);
+      return reply.send({ path: filePath });
     },
   );
 }

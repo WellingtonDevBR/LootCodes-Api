@@ -22,6 +22,7 @@ import type { GetFaqsUseCase } from '../../core/use-cases/products/reference/get
 import type { GetPlatformBySlugUseCase } from '../../core/use-cases/products/reference/get-platform-by-slug.use-case.js';
 import type { GetPlatformNavItemsUseCase } from '../../core/use-cases/products/reference/get-platform-nav-items.use-case.js';
 import type { GetPlatformFamilyBySlugUseCase } from '../../core/use-cases/products/reference/get-platform-family-by-slug.use-case.js';
+import type { GetCardVariantsBatchUseCase } from '../../core/use-cases/products/catalog/get-card-variants-batch.use-case.js';
 import type { GetCategoriesUseCase } from '../../core/use-cases/products/categories/get-categories.use-case.js';
 import type { GetCategoryBySlugUseCase } from '../../core/use-cases/products/categories/get-category-by-slug.use-case.js';
 import type { GetSubcategoriesUseCase } from '../../core/use-cases/products/categories/get-subcategories.use-case.js';
@@ -52,6 +53,7 @@ import {
   regionIdParamsSchema,
   geoRestrictedVariantsQuerySchema,
   geoRestrictedRegionsQuerySchema,
+  cardVariantsBatchBodySchema,
 } from '../schemas/products.schema.js';
 
 const ALLOWED_CURRENCIES = new Set(
@@ -148,6 +150,16 @@ export async function productRoutes(app: FastifyInstance) {
     const featured = await uc.execute();
     return reply.send(featured);
   });
+
+  app.post<{ Body: { productIds: string[] } }>(
+    '/card-variants-batch',
+    { schema: { body: cardVariantsBatchBodySchema } },
+    async (request, reply) => {
+      const uc = container.resolve<GetCardVariantsBatchUseCase>(UC_TOKENS.GetCardVariantsBatch);
+      const rows = await uc.execute(request.body.productIds);
+      return reply.send(rows);
+    },
+  );
 
   // ─── Composite Product Page (public) ─────────────────────────────
 

@@ -3,6 +3,10 @@ import { container } from 'tsyringe';
 import { UC_TOKENS, TOKENS } from '../../di/tokens.js';
 import type { GetOrderDetailUseCase } from '../../core/use-cases/orders/get-order-detail.use-case.js';
 import type { GetUserOrdersUseCase } from '../../core/use-cases/orders/get-user-orders.use-case.js';
+import type { GetOrderForVerificationUseCase } from '../../core/use-cases/orders/get-order-for-verification.use-case.js';
+import type { GetKeysForProductKeyUseCase } from '../../core/use-cases/orders/get-keys-for-product-key.use-case.js';
+import type { GetOrderItemsForTicketUseCase } from '../../core/use-cases/orders/get-order-items-for-ticket.use-case.js';
+import type { GetUserOrdersForSupportUseCase } from '../../core/use-cases/orders/get-user-orders-for-support.use-case.js';
 import type { ValidateAccessTokenUseCase } from '../../core/use-cases/orders/validate-access-token.use-case.js';
 import type { GenerateAccessTokenUseCase } from '../../core/use-cases/orders/generate-access-token.use-case.js';
 import type { RefreshAccessTokenUseCase } from '../../core/use-cases/orders/refresh-access-token.use-case.js';
@@ -26,6 +30,7 @@ import {
   orderIdParamsSchema,
   itemIdParamsSchema,
   keyIdParamsSchema,
+  productKeyIdParamsSchema,
   revealKeyBodySchema,
   checkKeyViewedQuerySchema,
   validateAccessTokenBodySchema,
@@ -387,6 +392,83 @@ export async function orderRoutes(app: FastifyInstance) {
 
       if (!ticket) return reply.send({ ticket: null });
       return reply.send({ ticket });
+    },
+  );
+
+  app.get<{ Params: { id: string } }>(
+    '/:id/for-verification',
+    {
+      schema: { params: orderIdParamsSchema },
+    },
+    async (request, reply) => {
+      const authHeader = request.headers.authorization;
+      let sessionUserId: string | undefined;
+
+      if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+        const rawJwt = authHeader.slice(7).trim();
+        if (rawJwt.length > 0) {
+          const authProvider = container.resolve<IAuthProvider>(TOKENS.AuthProvider);
+          const authUser = await authProvider.getUserByToken(rawJwt);
+          if (authUser) sessionUserId = authUser.id;
+        }
+      }
+
+      const orderAccessToken = readGuestOrderAccessToken(request);
+
+      if (!sessionUserId && !orderAccessToken) {
+        throw new AuthenticationError('Missing credentials');
+      }
+
+      const uc = container.resolve<GetOrderForVerificationUseCase>(UC_TOKENS.GetOrderForVerification);
+      const order = await uc.execute(request.params.id, {
+        userId: sessionUserId,
+        orderAccessToken,
+      });
+      return reply.send(order);
+    },
+  );
+
+  app.get<{ Params: { productKeyId: string } }>(
+    '/keys/by-product-key/:productKeyId',
+    {
+      preHandler: [authGuard],
+      schema: { params: productKeyIdParamsSchema },
+    },
+    async (request, reply) => {
+      const uc = container.resolve<GetKeysForProductKeyUseCase>(UC_TOKENS.GetKeysForProductKey);
+      const user = getAuthUser(request);
+
+      const result = await uc.execute(request.params.productKeyId, user.id);
+      return reply.send(result);
+    },
+  );
+
+  app.get<{ Params: { id: string } }>(
+    '/:id/items-for-ticket',
+    {
+      preHandler: [authGuard],
+      schema: { params: orderIdParamsSchema },
+    },
+    async (request, reply) => {
+      const uc = container.resolve<GetOrderItemsForTicketUseCase>(UC_TOKENS.GetOrderItemsForTicket);
+      const user = getAuthUser(request);
+
+      const items = await uc.execute(request.params.id, user.id);
+      return reply.send({ items });
+    },
+  );
+
+  app.get(
+    '/for-support',
+    {
+      preHandler: [authGuard],
+    },
+    async (request, reply) => {
+      const uc = container.resolve<GetUserOrdersForSupportUseCase>(UC_TOKENS.GetUserOrdersForSupport);
+      const user = getAuthUser(request);
+
+      const orders = await uc.execute(user.id);
+      return reply.send({ orders });
     },
   );
 }
