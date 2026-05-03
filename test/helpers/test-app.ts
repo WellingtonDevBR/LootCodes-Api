@@ -349,9 +349,11 @@ function registerMocks(): TestMocks {
     searchProvider: new MockSearchProvider(),
     customerResolver: new MockCustomerResolver(),
     paymentProviderFactory: new MockPaymentProviderFactory(),
-    paymentCapturerFactory: new MockPaymentCapturerFactory(),
+    paymentCapturerFactory: undefined as unknown as MockPaymentCapturerFactory,
     paymentVerifierFactory: new MockPaymentVerifierFactory(),
   };
+
+  mocks.paymentCapturerFactory = new MockPaymentCapturerFactory(mocks.paymentCapturer);
 
   // Infrastructure
   container.register(TOKENS.Database, { useValue: mocks.db });
@@ -433,7 +435,6 @@ function registerMocks(): TestMocks {
   container.register(TOKENS.PaymentVerifier, { useValue: mocks.paymentVerifier });
   container.register(TOKENS.RiskAssessor, { useValue: mocks.riskAssessor });
   container.register(TOKENS.FulfillmentService, { useValue: mocks.fulfillmentService });
-  container.register(TOKENS.PaymentCapturer, { useValue: mocks.paymentCapturer });
 
   // Webhooks
   container.register(TOKENS.WebhookVerifier, { useValue: mocks.webhookVerifier });
