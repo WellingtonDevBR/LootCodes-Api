@@ -1,10 +1,15 @@
-# CI/CD: lint, test, Docker build; on main — push to ECR and SSM deploy on EC2.
+# CI/CD: lint, test, Docker build; on main/dev — push to ECR and SSM deploy.
+#
+# Branches:
+#   main → production (EC2_INSTANCE_IDS)
+#   dev  → staging    (EC2_STAGING_INSTANCE_IDS)
 #
 # Repository: WellingtonDevBR/LootCodes-Api
 # AWS: add this repo to the IAM OIDC trust policy for your deploy role, e.g.
 #   "token.actions.githubusercontent.com:sub": "repo:WellingtonDevBR/LootCodes-Api:*"
 #
-# GitHub → Variables: AWS_REGION, ECR_REPOSITORY, EC2_INSTANCE_IDS, EC2_DEPLOY_DIR (optional)
+# GitHub → Variables: AWS_REGION, ECR_REPOSITORY, EC2_INSTANCE_IDS,
+#                     EC2_STAGING_INSTANCE_IDS, EC2_DEPLOY_DIR (optional)
 # GitHub → Secrets:   AWS_ROLE_ARN
 
 name: Backend CI / CD
@@ -12,7 +17,7 @@ name: Backend CI / CD
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, dev]
   workflow_dispatch:
 
 permissions:
@@ -54,14 +59,28 @@ jobs:
 
   deploy:
     needs: [ci]
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'))
     runs-on: ubuntu-latest
-    # Ensure this job can mint an OIDC token (some org/repos need this on the job, not only workflow).
     permissions:
       id-token: write
       contents: read
     steps:
       - uses: actions/checkout@v4
+
+      - name: Resolve deploy target
+        id: target
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/dev" ]; then
+            echo "env=staging" >> "$GITHUB_OUTPUT"
+            echo "instance_ids=${{ vars.EC2_STAGING_INSTANCE_IDS }}" >> "$GITHUB_OUTPUT"
+            echo "image_tag_extra=staging" >> "$GITHUB_OUTPUT"
+          else
+            echo "env=production" >> "$GITHUB_OUTPUT"
+            echo "instance_ids=${{ vars.EC2_INSTANCE_IDS }}" >> "$GITHUB_OUTPUT"
+            echo "image_tag_extra=latest" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Verify AWS_ROLE_ARN secret
         env:
@@ -89,12 +108,12 @@ jobs:
 
       - name: Verify EC2 targets exist in AWS_REGION and are SSM Online
         env:
-          INSTANCE_IDS: ${{ vars.EC2_INSTANCE_IDS }}
+          INSTANCE_IDS: ${{ steps.target.outputs.instance_ids }}
+          DEPLOY_ENV: ${{ steps.target.outputs.env }}
         run: |
-          # Re-running an old workflow run in GitHub uses the workflow file from THAT commit only. To use the latest YAML, push to main or "Run workflow" on the default branch instead of "Re-run jobs".
-          echo "::notice::verify-ec2-ssm v3 (get-caller-identity + stderr from describe-instances)"
+          echo "::notice::Deploying to $DEPLOY_ENV"
           if [ -z "$INSTANCE_IDS" ]; then
-            echo "Set GitHub variable EC2_INSTANCE_IDS (comma or space separated)."
+            echo "::error::No EC2 instance IDs for $DEPLOY_ENV. Set EC2_INSTANCE_IDS (production) or EC2_STAGING_INSTANCE_IDS (staging) in GitHub Variables."
             exit 1
           fi
           echo "Deploy role identity — EC2 must exist in this account and region:"
@@ -114,7 +133,7 @@ jobs:
             ec2_code=$?
             set -e
             if [ "$ec2_code" -ne 0 ]; then
-              echo "::error::aws ec2 describe-instances failed for $id (exit $ec2_code). IAM: attach deploy/iam-add-ec2-describe-to-github-deploy-role.json to role GitHubActionsLootCodesApiDeploy (IAM → Roles → Permissions → Add permissions → Create inline policy → JSON). Full example: deploy/github-actions-deploy-role-policy.example.json"
+              echo "::error::aws ec2 describe-instances failed for $id (exit $ec2_code)."
               cat "$errf" >&2 || true
               rm -f "$errf"
               FAIL=1
@@ -123,12 +142,12 @@ jobs:
             rm -f "$errf"
 
             if [ "$st" = "None" ] || [ -z "$st" ]; then
-              echo "::error::EC2 $id not visible in $AWS_REGION for the account above. Common causes: AWS_ROLE_ARN is a different account than the EC2, instance was terminated and removed, stale EC2_INSTANCE_IDS, or wrong AWS_REGION."
+              echo "::error::EC2 $id not visible in $AWS_REGION."
               FAIL=1
               continue
             fi
             if [ "$st" != "running" ]; then
-              echo "::error::EC2 $id is not running (state: $st). Start it or update EC2_INSTANCE_IDS."
+              echo "::error::EC2 $id is not running (state: $st)."
               FAIL=1
               continue
             fi
@@ -143,7 +162,7 @@ jobs:
             ssm_code=$?
             set -e
             if [ "$ssm_code" -ne 0 ]; then
-              echo "::error::ssm:DescribeInstanceInformation failed for $id (exit $ssm_code). The deploy role needs ssm:DescribeInstanceInformation, ssm:SendCommand, ssm:GetCommandInvocation, ssm:ListCommandInvocations. Attach deploy/iam-github-deploy-role-full.json to role GitHubActionsLootCodesApiDeploy."
+              echo "::error::ssm:DescribeInstanceInformation failed for $id (exit $ssm_code)."
               cat "$ssm_err" >&2 || true
               rm -f "$ssm_err"
               FAIL=1
@@ -153,7 +172,7 @@ jobs:
             if [ "$ping" = "Online" ]; then
               echo "OK: $id running, SSM PingStatus=Online"
             else
-              echo "::error::SSM: $id is not Online (status: ${ping:-not registered}). Agent may not be running on the instance."
+              echo "::error::SSM: $id is not Online (status: ${ping:-not registered})."
               FAIL=1
             fi
           done
@@ -168,25 +187,27 @@ jobs:
         env:
           REGISTRY: ${{ steps.ecr.outputs.registry }}
           REPO: ${{ vars.ECR_REPOSITORY }}
+          EXTRA_TAG: ${{ steps.target.outputs.image_tag_extra }}
         run: |
           if [ -z "$REPO" ]; then
             echo "Set GitHub variable ECR_REPOSITORY to your ECR repository name."
             exit 1
           fi
           IMAGE="${REGISTRY}/${REPO}"
-          docker build -t "${IMAGE}:${GITHUB_SHA}" -t "${IMAGE}:latest" .
+          docker build -t "${IMAGE}:${GITHUB_SHA}" -t "${IMAGE}:${EXTRA_TAG}" .
           docker push "${IMAGE}:${GITHUB_SHA}"
-          docker push "${IMAGE}:latest"
+          docker push "${IMAGE}:${EXTRA_TAG}"
           echo "uri=${IMAGE}:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
 
-      - name: Deploy to EC2 via SSM
+      - name: Deploy to EC2 via SSM (${{ steps.target.outputs.env }})
         env:
           FULL_IMAGE: ${{ steps.image.outputs.uri }}
-          INSTANCE_IDS: ${{ vars.EC2_INSTANCE_IDS }}
+          INSTANCE_IDS: ${{ steps.target.outputs.instance_ids }}
           EC2_DEPLOY_DIR: ${{ vars.EC2_DEPLOY_DIR }}
+          DEPLOY_ENV: ${{ steps.target.outputs.env }}
         run: |
           if [ -z "$INSTANCE_IDS" ]; then
-            echo "Set GitHub variable EC2_INSTANCE_IDS (instance id(s) to receive the deploy)."
+            echo "Set EC2_INSTANCE_IDS or EC2_STAGING_INSTANCE_IDS in GitHub Variables."
             exit 1
           fi
           python3 << 'PY'
@@ -199,10 +220,11 @@ jobs:
           region = os.environ["AWS_REGION"]
           image = os.environ["FULL_IMAGE"]
           deploy_dir = os.environ.get("EC2_DEPLOY_DIR") or "/opt/lootcodes-api"
+          deploy_env = os.environ.get("DEPLOY_ENV", "unknown")
           raw = os.environ.get("INSTANCE_IDS", "")
           instances = [x.strip() for x in raw.replace(",", " ").split() if x.strip()]
           if not instances:
-              print("No instance IDs in EC2_INSTANCE_IDS", file=sys.stderr)
+              print("No instance IDs", file=sys.stderr)
               sys.exit(1)
 
           commands = [
@@ -230,7 +252,7 @@ jobs:
               "--document-name",
               "AWS-RunShellScript",
               "--comment",
-              f"lootcodes-api deploy {sha}",
+              f"lootcodes-api {deploy_env} deploy {sha}",
               "--parameters",
               "file:///tmp/ssm-params.json",
               "--instance-ids",
@@ -280,3 +302,81 @@ jobs:
           print("Timed out waiting for SSM command", file=sys.stderr)
           sys.exit(1)
           PY
+
+  smoke-test:
+    needs: [deploy]
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Resolve target instances
+        id: target
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/dev" ]; then
+            echo "instance_ids=${{ vars.EC2_STAGING_INSTANCE_IDS }}" >> "$GITHUB_OUTPUT"
+            echo "env=staging" >> "$GITHUB_OUTPUT"
+          else
+            echo "instance_ids=${{ vars.EC2_INSTANCE_IDS }}" >> "$GITHUB_OUTPUT"
+            echo "env=production" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Health check via SSM
+        env:
+          INSTANCE_IDS: ${{ steps.target.outputs.instance_ids }}
+          DEPLOY_ENV: ${{ steps.target.outputs.env }}
+        run: |
+          echo "Running smoke test on $DEPLOY_ENV..."
+          for id in $(echo "$INSTANCE_IDS" | tr ',' ' '); do
+            id=$(echo "$id" | xargs)
+            [ -z "$id" ] && continue
+
+            CMD_ID=$(aws ssm send-command \
+              --region "$AWS_REGION" \
+              --document-name AWS-RunShellScript \
+              --comment "smoke-test health" \
+              --parameters '{"commands":["curl -sf http://localhost:3000/health || exit 1"]}' \
+              --instance-ids "$id" \
+              --output text \
+              --query 'Command.CommandId')
+
+            echo "Smoke test CommandId: $CMD_ID (instance $id)"
+
+            for attempt in $(seq 1 12); do
+              sleep 5
+              STATUS=$(aws ssm list-command-invocations \
+                --region "$AWS_REGION" \
+                --command-id "$CMD_ID" \
+                --details \
+                --output json | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)
+          invs=d.get('CommandInvocations',[])
+          if invs:
+            print(invs[0].get('Status','Pending'))
+          else:
+            print('Pending')
+          ")
+              echo "  attempt $attempt: $STATUS"
+              if [ "$STATUS" = "Success" ]; then
+                echo "Health check passed for $id"
+                break
+              fi
+              if [ "$STATUS" = "Failed" ] || [ "$STATUS" = "TimedOut" ]; then
+                echo "::error::Health check failed on $id ($DEPLOY_ENV)"
+                exit 1
+              fi
+            done
+
+            if [ "$STATUS" != "Success" ]; then
+              echo "::error::Health check timed out on $id ($DEPLOY_ENV)"
+              exit 1
+            fi
+          done
+          echo "All smoke tests passed for $DEPLOY_ENV"
