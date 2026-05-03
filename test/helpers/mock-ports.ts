@@ -405,6 +405,11 @@ export class MockUserLibraryRepository implements IUserLibraryRepository {
     return entry;
   }
   async remove(userId: string, productId: string): Promise<void> { this.entries = this.entries.filter(e => !(e.user_id === userId && e.product_id === productId)); }
+  async removeWishlistOnly(userId: string, productId: string): Promise<void> {
+    this.entries = this.entries.filter(
+      (e) => !(e.user_id === userId && e.product_id === productId && e.status === 'wishlist'),
+    );
+  }
   async update(_userId: string, _productId: string, _data: UpdateLibraryEntryDto): Promise<void> {}
   async getProductDetails(_productIds: string[]): Promise<LibraryProductDetails[]> { return []; }
 }

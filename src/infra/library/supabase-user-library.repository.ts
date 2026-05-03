@@ -24,6 +24,25 @@ export class SupabaseUserLibraryRepository implements IUserLibraryRepository {
   }
 
   async setStatus(userId: string, dto: SetLibraryStatusDto): Promise<LibraryEntry> {
+    if (dto.status === 'wishlist') {
+      const existing = await this.db.queryOne<LibraryEntry>('user_library', {
+        eq: [
+          ['user_id', userId],
+          ['product_id', dto.product_id],
+        ],
+        maybeSingle: true,
+      });
+      if (existing) {
+        return existing;
+      }
+      return this.db.insert<LibraryEntry>('user_library', {
+        user_id: userId,
+        product_id: dto.product_id,
+        status: 'wishlist',
+        source: dto.source ?? 'manual',
+      });
+    }
+
     return this.db.upsert<LibraryEntry>(
       'user_library',
       {
@@ -39,6 +58,14 @@ export class SupabaseUserLibraryRepository implements IUserLibraryRepository {
 
   async remove(userId: string, productId: string): Promise<void> {
     await this.db.delete('user_library', { user_id: userId, product_id: productId });
+  }
+
+  async removeWishlistOnly(userId: string, productId: string): Promise<void> {
+    await this.db.delete('user_library', {
+      user_id: userId,
+      product_id: productId,
+      status: 'wishlist',
+    });
   }
 
   async update(userId: string, productId: string, data: UpdateLibraryEntryDto): Promise<void> {

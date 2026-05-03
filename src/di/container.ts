@@ -155,6 +155,7 @@ import { UploadAttachmentUseCase } from '../core/use-cases/support/upload-attach
 import { ListLibraryUseCase } from '../core/use-cases/library/list-library.use-case.js';
 import { SetLibraryStatusUseCase } from '../core/use-cases/library/set-library-status.use-case.js';
 import { RemoveFromLibraryUseCase } from '../core/use-cases/library/remove-from-library.use-case.js';
+import { RemoveWishlistOnlyUseCase } from '../core/use-cases/library/remove-wishlist-only.use-case.js';
 import { UpdateLibraryEntryUseCase } from '../core/use-cases/library/update-library-entry.use-case.js';
 import { GetLibraryProductDetailsUseCase } from '../core/use-cases/library/get-library-product-details.use-case.js';
 
@@ -469,6 +470,7 @@ container.register(UC_TOKENS.UploadAttachment, { useClass: UploadAttachmentUseCa
 container.register(UC_TOKENS.ListLibrary, { useClass: ListLibraryUseCase });
 container.register(UC_TOKENS.SetLibraryStatus, { useClass: SetLibraryStatusUseCase });
 container.register(UC_TOKENS.RemoveFromLibrary, { useClass: RemoveFromLibraryUseCase });
+container.register(UC_TOKENS.RemoveWishlistOnly, { useClass: RemoveWishlistOnlyUseCase });
 container.register(UC_TOKENS.UpdateLibraryEntry, { useClass: UpdateLibraryEntryUseCase });
 container.register(UC_TOKENS.GetLibraryProductDetails, { useClass: GetLibraryProductDetailsUseCase });
 

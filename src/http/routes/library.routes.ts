@@ -5,6 +5,7 @@ import type { ListLibraryUseCase } from '../../core/use-cases/library/list-libra
 import type { SetLibraryStatusUseCase } from '../../core/use-cases/library/set-library-status.use-case.js';
 import type { UpdateLibraryEntryUseCase } from '../../core/use-cases/library/update-library-entry.use-case.js';
 import type { RemoveFromLibraryUseCase } from '../../core/use-cases/library/remove-from-library.use-case.js';
+import type { RemoveWishlistOnlyUseCase } from '../../core/use-cases/library/remove-wishlist-only.use-case.js';
 import type { GetLibraryProductDetailsUseCase } from '../../core/use-cases/library/get-library-product-details.use-case.js';
 import type { SetLibraryStatusDto, UpdateLibraryEntryDto } from '../../core/use-cases/library/library.types.js';
 import { authGuard } from '../middleware/auth.guard.js';
@@ -73,6 +74,17 @@ export async function libraryRoutes(app: FastifyInstance) {
       const { authUser } = request as unknown as AuthenticatedRequest;
       await uc.execute(authUser.id, request.params.productId, request.body);
       return reply.send({ success: true });
+    },
+  );
+
+  app.delete<{ Params: { productId: string } }>(
+    '/:productId/wishlist',
+    { preHandler: [authGuard], schema: { params: libraryProductParamsSchema } },
+    async (request, reply) => {
+      const uc = container.resolve<RemoveWishlistOnlyUseCase>(UC_TOKENS.RemoveWishlistOnly);
+      const { authUser } = request as unknown as AuthenticatedRequest;
+      await uc.execute(authUser.id, request.params.productId);
+      return reply.code(204).send();
     },
   );
 

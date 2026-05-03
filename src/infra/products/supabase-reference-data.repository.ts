@@ -63,7 +63,8 @@ export class SupabaseReferenceDataRepository implements IReferenceDataRepository
 
   async getGenres(): Promise<Genre[]> {
     return this.db.query<Genre>('genres', {
-      order: { column: 'name', ascending: true },
+      select: 'id, name, slug, sort_order',
+      order: { column: 'sort_order', ascending: true },
     });
   }
 

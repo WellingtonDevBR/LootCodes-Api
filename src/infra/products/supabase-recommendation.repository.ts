@@ -79,7 +79,7 @@ export class SupabaseRecommendationRepository implements IRecommendationReposito
   async getPreOrders(limit: number): Promise<RecommendedProduct[]> {
     logger.debug('Fetching pre-orders', { limit });
     const rows = await this.db.query<RecommendedProduct>('products', {
-      select: 'id, name, slug, image_url',
+      select: 'id, name, slug, image_url, release_date',
       eq: [['is_active', true]],
       order: { column: 'release_date', ascending: true },
       limit,

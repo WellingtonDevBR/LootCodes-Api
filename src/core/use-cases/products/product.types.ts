@@ -153,7 +153,8 @@ export interface Region {
 export interface Genre {
   id: string;
   name: string;
-  slug?: string;
+  slug: string;
+  sort_order: number;
 }
 
 export interface FAQ {

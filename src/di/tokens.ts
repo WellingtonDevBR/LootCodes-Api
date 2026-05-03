@@ -149,6 +149,7 @@ export const UC_TOKENS = {
   ListLibrary: Symbol.for('ListLibraryUseCase'),
   SetLibraryStatus: Symbol.for('SetLibraryStatusUseCase'),
   RemoveFromLibrary: Symbol.for('RemoveFromLibraryUseCase'),
+  RemoveWishlistOnly: Symbol.for('RemoveWishlistOnlyUseCase'),
   UpdateLibraryEntry: Symbol.for('UpdateLibraryEntryUseCase'),
   GetLibraryProductDetails: Symbol.for('GetLibraryProductDetailsUseCase'),
 
