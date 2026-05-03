@@ -32,13 +32,14 @@ export const upsertSessionSchema = {
   type: 'object',
   required: ['session_id'],
   properties: {
-    session_id: { type: 'string', format: 'uuid' },
+    session_id: { type: 'string', minLength: 1 },
     user_id: { type: 'string', format: 'uuid' },
     ip_address: { type: 'string', maxLength: 45 },
     user_agent: { type: 'string', maxLength: 512 },
     client_channel: { type: 'string', enum: ['web', 'mobile_app'] },
     fingerprint_hash: { type: 'string', maxLength: 128 },
     merge_anonymous: { type: 'boolean' },
+    auto_consolidate: { type: 'boolean' },
   },
   additionalProperties: false,
 } as const;

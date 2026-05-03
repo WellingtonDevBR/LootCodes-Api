@@ -2,6 +2,7 @@ import { injectable, inject } from 'tsyringe';
 import { TOKENS } from '../../di/tokens.js';
 import type { IDatabase } from '../../core/ports/database.port.js';
 import type { ISecurityHoldRepository } from '../../core/ports/security-hold-repository.port.js';
+import type { CreateSecurityHoldParams } from '../../core/ports/security-hold-repository.port.js';
 import type {
   SecurityHold,
   SecurityHoldStatus,
@@ -14,6 +15,18 @@ const logger = createLogger('security-hold-repository');
 @injectable()
 export class SupabaseSecurityHoldRepository implements ISecurityHoldRepository {
   constructor(@inject(TOKENS.Database) private db: IDatabase) {}
+
+  async createHold(params: CreateSecurityHoldParams): Promise<{ id: string }> {
+    return this.db.insert<{ id: string }>('security_holds', {
+      order_id: params.order_id,
+      user_id: params.user_id ?? null,
+      guest_email: params.guest_email ?? null,
+      risk_score: params.risk_score,
+      risk_factors: params.risk_factors,
+      hold_reason: params.hold_reason,
+      status: params.status ?? 'pending_verification',
+    });
+  }
 
   async findById(holdId: string): Promise<SecurityHold | null> {
     return this.db.queryOne<SecurityHold>('security_holds', {

@@ -10,6 +10,8 @@ describe('CancelCheckoutUseCase', () => {
   let cancelUseCase: CancelCheckoutUseCase;
   let initUseCase: InitializeCheckoutUseCase;
 
+  const line = { variant_id: 'var-1', product_id: 'prod-1', quantity: 1, price_usd: 2999 };
+
   beforeEach(() => {
     mocks = setupTestContainer();
     cancelUseCase = container.resolve<CancelCheckoutUseCase>(UC_TOKENS.CancelCheckout);
@@ -20,10 +22,7 @@ describe('CancelCheckoutUseCase', () => {
   });
 
   it('should cancel existing checkout', async () => {
-    const result = await initUseCase.execute(
-      { items: [{ variant_id: 'var-1', quantity: 1 }] },
-      'user-1',
-    );
+    const result = await initUseCase.execute({ items: [line] }, 'user-1');
     await expect(cancelUseCase.execute(result.order_id, 'user-1')).resolves.not.toThrow();
   });
 
@@ -32,10 +31,7 @@ describe('CancelCheckoutUseCase', () => {
   });
 
   it('should throw ForbiddenError when user does not own the order', async () => {
-    const result = await initUseCase.execute(
-      { items: [{ variant_id: 'var-1', quantity: 1 }] },
-      'user-1',
-    );
+    const result = await initUseCase.execute({ items: [line] }, 'user-1');
     await expect(cancelUseCase.execute(result.order_id, 'user-2')).rejects.toThrow('You do not have access to this order');
   });
 });

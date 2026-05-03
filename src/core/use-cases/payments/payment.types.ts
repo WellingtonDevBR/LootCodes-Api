@@ -23,16 +23,56 @@ export interface RiskAssessment {
   should_block: boolean;
 }
 
-export interface PaymentVerificationResult {
-  status: 'fulfilled' | 'held' | 'blocked' | 'pending_verification' | 'error';
+/** Internal result from checking the payment provider (Stripe/PayPal). */
+export interface ProviderPaymentStatus {
+  status: 'fulfilled' | 'processing' | 'requires_action' | 'canceled' | 'error';
   order_id?: string;
   message?: string;
+}
+
+/**
+ * Response shape for /payments/verify — must match the frontend
+ * `VerificationResult` interface in EnhancedPaymentProcessing.tsx.
+ *
+ * The Edge function `payment-verification` is the canonical source;
+ * keep status values in sync with its handler responses.
+ */
+export interface PaymentVerificationResult {
+  success: boolean;
+  status:
+    | 'verified'
+    | 'pending_fulfillment'
+    | 'processing'
+    | 'security_review'
+    | 'requires_verification'
+    | 'blocked'
+    | 'session_expired'
+    | 'requires_card_challenge'
+    | 'requires_verification_choice'
+    | 'failed'
+    | 'error';
+  order_id?: string;
+  order_number?: string;
+  message?: string;
+  error?: string;
+  ticket_number?: string;
+  access_token?: string;
+  guest_email?: string;
+  keys_assigned?: number;
+  total_keys?: number;
+  security_hold?: boolean;
+  funding_source?: string | null;
+  processing_reason?: string;
 }
 
 export interface FulfillmentResult {
   fulfilled: boolean;
   order_id: string;
+  order_number?: string;
   keys_delivered?: number;
+  access_token?: string;
+  guest_email?: string;
+  security_hold?: boolean;
 }
 
 export interface CapturePaymentDto {

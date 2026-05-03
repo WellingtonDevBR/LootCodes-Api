@@ -35,6 +35,12 @@ export interface CreateTicketDto {
   order_id?: string;
   category?: string;
   guest_email?: string;
+  ticket_type?: string;
+  description?: string;
+  sender_name?: string;
+  source?: string;
+  source_channel?: string;
+  metadata?: Record<string, unknown>;
 }
 
 export interface AddMessageDto {

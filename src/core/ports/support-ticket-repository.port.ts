@@ -9,4 +9,5 @@ export interface ISupportTicketRepository {
   updateStatus(ticketId: string, status: string, reason?: string): Promise<void>;
   submitFeedback(ticketId: string, feedback: TicketFeedbackDto): Promise<void>;
   getVerificationTicketsForOrder(orderId: string): Promise<SupportTicket[]>;
+  findVerificationTicketForOrder(orderId: string, ticketTypes: string[]): Promise<SupportTicket | null>;
 }

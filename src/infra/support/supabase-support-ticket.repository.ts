@@ -26,10 +26,15 @@ export class SupabaseSupportTicketRepository implements ISupportTicketRepository
   async create(params: CreateTicketDto & { user_id?: string }): Promise<SupportTicket> {
     return this.db.insert<SupportTicket>('support_tickets', {
       subject: params.subject,
+      description: params.description ?? params.message ?? null,
       user_id: params.user_id ?? null,
       guest_email: params.guest_email ?? null,
       order_id: params.order_id ?? null,
       category: params.category ?? null,
+      ticket_type: params.ticket_type ?? null,
+      source: params.source ?? 'web_form',
+      source_channel: params.source_channel ?? 'web',
+      metadata: params.metadata ?? null,
       status: 'open',
       priority: 'normal',
     });
@@ -93,6 +98,18 @@ export class SupabaseSupportTicketRepository implements ISupportTicketRepository
   async getVerificationTicketsForOrder(orderId: string): Promise<SupportTicket[]> {
     return this.db.query<SupportTicket>('support_tickets', {
       eq: [['order_id', orderId], ['category', 'verification']],
+      order: { column: 'created_at', ascending: false },
+    });
+  }
+
+  async findVerificationTicketForOrder(
+    orderId: string,
+    ticketTypes: string[],
+  ): Promise<SupportTicket | null> {
+    return this.db.queryOne<SupportTicket>('support_tickets', {
+      select: 'id, ticket_number, status, ticket_type',
+      eq: [['order_id', orderId]],
+      in: [['ticket_type', ticketTypes]],
       order: { column: 'created_at', ascending: false },
     });
   }

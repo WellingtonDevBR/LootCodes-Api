@@ -1,5 +1,5 @@
-import type { VerifyPaymentDto, PaymentVerificationResult } from '../use-cases/payments/payment.types.js';
+import type { VerifyPaymentDto, ProviderPaymentStatus } from '../use-cases/payments/payment.types.js';
 
 export interface IPaymentVerifier {
-  verifyPayment(dto: VerifyPaymentDto): Promise<PaymentVerificationResult>;
+  verifyPayment(dto: VerifyPaymentDto): Promise<ProviderPaymentStatus>;
 }

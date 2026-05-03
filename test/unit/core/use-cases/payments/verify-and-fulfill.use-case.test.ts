@@ -1,10 +1,21 @@
 import 'reflect-metadata';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { container } from 'tsyringe';
 import { UC_TOKENS } from '../../../../../src/di/tokens.js';
 import { setupTestContainer, type TestMocks } from '../../../../helpers/test-app.js';
 import type { VerifyAndFulfillUseCase } from '../../../../../src/core/use-cases/payments/verify-and-fulfill.use-case.js';
 import { ValidationError } from '../../../../../src/core/errors/domain-errors.js';
+
+const ORDER_ROW = {
+  id: 'order-1',
+  order_number: 'ORD-001',
+  status: 'paid',
+  fulfillment_status: null,
+  user_id: 'user-1',
+  guest_email: null,
+  delivery_email: null,
+  session_id: null,
+};
 
 describe('VerifyAndFulfillUseCase', () => {
   let mocks: TestMocks;
@@ -14,9 +25,10 @@ describe('VerifyAndFulfillUseCase', () => {
     container.clearInstances();
     mocks = setupTestContainer();
     useCase = container.resolve<VerifyAndFulfillUseCase>(UC_TOKENS.VerifyAndFulfill);
+    vi.spyOn(mocks.db, 'queryOne').mockResolvedValue(ORDER_ROW);
   });
 
-  it('returns fulfilled when payment verified and risk is low', async () => {
+  it('returns verified when payment verified and risk is low', async () => {
     mocks.paymentVerifier.result = { status: 'fulfilled', order_id: 'order-1' };
     mocks.riskAssessor.assessment = { score: 5, level: 'low', factors: [], should_hold: false, should_block: false };
     mocks.fulfillmentService.fulfillResult = { fulfilled: true, order_id: 'order-1', keys_delivered: 2 };
@@ -27,12 +39,30 @@ describe('VerifyAndFulfillUseCase', () => {
       'Mozilla/5.0',
     );
 
-    expect(result.status).toBe('fulfilled');
+    expect(result.success).toBe(true);
+    expect(result.status).toBe('verified');
     expect(result.order_id).toBe('order-1');
+    expect(result.order_number).toBe('ORD-001');
+  });
+
+  it('returns pending_fulfillment when fulfillment has no keys', async () => {
+    mocks.paymentVerifier.result = { status: 'fulfilled', order_id: 'order-1' };
+    mocks.riskAssessor.assessment = { score: 5, level: 'low', factors: [], should_hold: false, should_block: false };
+    mocks.fulfillmentService.fulfillResult = { fulfilled: false, order_id: 'order-1' };
+
+    const result = await useCase.execute(
+      { payment_intent_id: 'pi_abc', order_id: 'order-1' },
+      '1.2.3.4',
+      'Mozilla/5.0',
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.status).toBe('pending_fulfillment');
+    expect(result.order_number).toBe('ORD-001');
   });
 
   it('returns error when payment is not verified', async () => {
-    mocks.paymentVerifier.result = { status: 'pending_verification', order_id: 'order-2' };
+    mocks.paymentVerifier.result = { status: 'error', order_id: 'order-2' };
 
     const result = await useCase.execute(
       { payment_intent_id: 'pi_pending', order_id: 'order-2' },
@@ -40,10 +70,24 @@ describe('VerifyAndFulfillUseCase', () => {
       'Mozilla/5.0',
     );
 
+    expect(result.success).toBe(false);
     expect(result.status).toBe('error');
   });
 
-  it('returns held when risk score triggers hold', async () => {
+  it('returns processing when provider is still processing', async () => {
+    mocks.paymentVerifier.result = { status: 'processing', order_id: 'order-1', message: 'Processing' };
+
+    const result = await useCase.execute(
+      { payment_intent_id: 'pi_proc', order_id: 'order-1' },
+      '1.2.3.4',
+      'Mozilla/5.0',
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.status).toBe('processing');
+  });
+
+  it('returns security_review when risk score triggers hold', async () => {
     mocks.paymentVerifier.result = { status: 'fulfilled', order_id: 'order-3' };
     mocks.riskAssessor.assessment = { score: 70, level: 'high', factors: ['velocity'], should_hold: true, should_block: false };
 
@@ -53,8 +97,9 @@ describe('VerifyAndFulfillUseCase', () => {
       'Mozilla/5.0',
     );
 
-    expect(result.status).toBe('held');
-    expect(result.order_id).toBe('order-3');
+    expect(result.success).toBe(false);
+    expect(result.status).toBe('security_review');
+    expect(result.security_hold).toBe(true);
   });
 
   it('returns blocked when risk score triggers block', async () => {
@@ -67,8 +112,26 @@ describe('VerifyAndFulfillUseCase', () => {
       'Mozilla/5.0',
     );
 
+    expect(result.success).toBe(false);
     expect(result.status).toBe('blocked');
-    expect(result.order_id).toBe('order-4');
+  });
+
+  it('returns verified if order is already fulfilled', async () => {
+    vi.spyOn(mocks.db, 'queryOne').mockResolvedValue({
+      ...ORDER_ROW,
+      fulfillment_status: 'fulfilled',
+    });
+    mocks.paymentVerifier.result = { status: 'fulfilled', order_id: 'order-1' };
+
+    const result = await useCase.execute(
+      { payment_intent_id: 'pi_dup', order_id: 'order-1' },
+      '1.2.3.4',
+      'Mozilla/5.0',
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.status).toBe('verified');
+    expect(result.order_number).toBe('ORD-001');
   });
 
   it('throws ValidationError when payment_intent_id is missing', async () => {

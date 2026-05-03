@@ -2,29 +2,16 @@ import Stripe from 'stripe';
 import { injectable } from 'tsyringe';
 import type { IPaymentCapturer } from '../../core/ports/payment-capturer.port.js';
 import type { CapturePaymentDto, CaptureResult } from '../../core/use-cases/payments/payment.types.js';
-import { InternalError, PaymentError } from '../../core/errors/domain-errors.js';
-import { getEnv } from '../../config/env.js';
+import { PaymentError } from '../../core/errors/domain-errors.js';
 import { createLogger } from '../../shared/logger.js';
+import { getStripeClient } from './stripe-client.js';
 
 const logger = createLogger('stripe-payment-capturer');
-
-let stripeInstance: Stripe | null = null;
-
-function getStripe(): Stripe {
-  if (!stripeInstance) {
-    const key = getEnv().STRIPE_SECRET_KEY;
-    if (!key) {
-      throw new InternalError('Stripe not configured — set STRIPE_SECRET_KEY');
-    }
-    stripeInstance = new Stripe(key);
-  }
-  return stripeInstance;
-}
 
 @injectable()
 export class StripePaymentCapturerAdapter implements IPaymentCapturer {
   async capture(dto: CapturePaymentDto): Promise<CaptureResult> {
-    const stripe = getStripe();
+    const stripe = getStripeClient();
 
     try {
       const intent = await stripe.paymentIntents.capture(dto.payment_intent_id, {}, {

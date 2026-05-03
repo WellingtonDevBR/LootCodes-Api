@@ -4,21 +4,9 @@ import type { IWebhookVerifier } from '../../core/ports/webhook-verifier.port.js
 import { ForbiddenError, InternalError } from '../../core/errors/domain-errors.js';
 import { getEnv } from '../../config/env.js';
 import { createLogger } from '../../shared/logger.js';
+import { getStripeClient } from './stripe-client.js';
 
 const logger = createLogger('stripe-webhook-verifier');
-
-let stripeInstance: Stripe | null = null;
-
-function getStripe(): Stripe {
-  if (!stripeInstance) {
-    const key = getEnv().STRIPE_SECRET_KEY;
-    if (!key) {
-      throw new InternalError('Stripe not configured — set STRIPE_SECRET_KEY');
-    }
-    stripeInstance = new Stripe(key);
-  }
-  return stripeInstance;
-}
 
 @injectable()
 export class StripeWebhookVerifierAdapter implements IWebhookVerifier {
@@ -29,7 +17,7 @@ export class StripeWebhookVerifierAdapter implements IWebhookVerifier {
     }
 
     try {
-      const stripe = getStripe();
+      const stripe = getStripeClient();
       const event = stripe.webhooks.constructEvent(payload, signature, webhookSecret);
       logger.info('Stripe webhook signature verified', { eventId: event.id, type: event.type });
       return event as unknown as Record<string, unknown>;

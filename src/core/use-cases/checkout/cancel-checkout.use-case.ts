@@ -24,8 +24,9 @@ export class CancelCheckoutUseCase {
       throw new ForbiddenError('You do not have access to this order');
     }
 
-    if (existingOrder.payment_intent_id) {
-      await this.paymentProvider.cancelPayment(existingOrder.payment_intent_id as string);
+    const pid = existingOrder.provider_payment_id;
+    if (typeof pid === 'string' && pid.length > 0) {
+      await this.paymentProvider.cancelPayment(pid);
     }
 
     await this.checkoutRepo.cancelOrder(orderId);

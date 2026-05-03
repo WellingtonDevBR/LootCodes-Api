@@ -58,21 +58,22 @@ export interface BatchEventsDto {
   events: Array<BatchedEventEnvelope>;
 }
 
+/** Matches Postgres `upsert_user_session` (overload with `p_client_channel`) — Edge `analytics` session-upsert branch. */
 export interface SessionUpsertDto {
   session_id: string;
   user_id?: string;
-  page_path?: string;
-  referrer?: string;
-  traffic_source?: string;
-  utm_source?: string;
-  utm_medium?: string;
-  utm_campaign?: string;
-  device_type?: string;
-  browser?: string;
-  os?: string;
-  screen_resolution?: string;
-  language?: string;
-  country_code?: string;
+  /** Public IP — must be omitted or invalid becomes null for `inet`. */
+  ip_address?: string | null;
+  country_code?: string | null;
+  city?: string | null;
+  region?: string | null;
+  /** ISO-ish timestamp accepted by Postgres as `timestamptz`; omit when unknown. */
+  started_at?: string | null;
+  user_agent?: string | null;
+  merge_anonymous?: boolean;
+  auto_consolidate?: boolean;
+  /** `web` / `mobile_app`; `unknown` is sent as null to match Edge. */
+  client_channel?: 'web' | 'mobile_app' | 'unknown' | null;
 }
 
 export interface ProductViewDurationDto {

@@ -16,11 +16,10 @@ describe('InitializeCheckoutUseCase', () => {
     ];
   });
 
+  const line = { variant_id: 'var-1', product_id: 'prod-1', quantity: 1, price_usd: 2999 };
+
   it('should create checkout with payment intent', async () => {
-    const result = await useCase.execute(
-      { items: [{ variant_id: 'var-1', quantity: 1 }] },
-      'user-1',
-    );
+    const result = await useCase.execute({ items: [line] }, 'user-1');
     expect(result.order_id).toBeTruthy();
     expect(result.client_secret).toBe('pi_mock_secret');
     expect(result.currency).toBe('usd');
@@ -34,15 +33,13 @@ describe('InitializeCheckoutUseCase', () => {
     mocks.cartValidator.stockResults = [
       { variant_id: 'var-1', available: false, available_quantity: 0 },
     ];
-    await expect(
-      useCase.execute({ items: [{ variant_id: 'var-1', quantity: 1 }] }, 'user-1'),
-    ).rejects.toThrow('out of stock');
+    await expect(useCase.execute({ items: [line] }, 'user-1')).rejects.toThrow('out of stock');
   });
 
   it('should apply promo code discount', async () => {
     mocks.promoCodeValidator.validCodes.set('SAVE10', { valid: true, discount_cents: 500, discount_type: 'fixed', discount_value: 500 });
     const result = await useCase.execute(
-      { items: [{ variant_id: 'var-1', quantity: 1 }], promo_code: 'SAVE10' },
+      { items: [line], promo_code: 'SAVE10' },
       'user-1',
     );
     expect(result.total_cents).toBe(2499);
@@ -52,7 +49,7 @@ describe('InitializeCheckoutUseCase', () => {
     mocks.ipBlocklist.block('10.0.0.1');
     await expect(
       useCase.execute(
-        { items: [{ variant_id: 'var-1', quantity: 1 }] },
+        { items: [line] },
         'user-1',
         '10.0.0.1',
       ),
@@ -63,7 +60,7 @@ describe('InitializeCheckoutUseCase', () => {
     mocks.rateLimiter.shouldAllow = false;
     await expect(
       useCase.execute(
-        { items: [{ variant_id: 'var-1', quantity: 1 }] },
+        { items: [line] },
         'user-1',
         '1.2.3.4',
       ),

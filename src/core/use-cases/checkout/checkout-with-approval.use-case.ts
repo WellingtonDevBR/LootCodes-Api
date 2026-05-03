@@ -42,6 +42,7 @@ export class CheckoutWithApprovalUseCase {
         customer_email: dto.customer_email,
         customer_name: dto.customer_name,
         billing_address: dto.billing_address,
+        payment_provider: dto.payment_provider,
       },
       userId,
       ipAddress,

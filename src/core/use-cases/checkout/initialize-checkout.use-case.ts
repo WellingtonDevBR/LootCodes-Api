@@ -13,6 +13,11 @@ import { createLogger } from '../../../shared/logger.js';
 
 const logger = createLogger('initialize-checkout-use-case');
 
+function normalizePaymentProviderName(raw?: string): string {
+  const n = raw?.trim().toLowerCase();
+  return n === 'paypal' ? 'paypal' : 'stripe';
+}
+
 @injectable()
 export class InitializeCheckoutUseCase {
   constructor(
@@ -39,6 +44,12 @@ export class InitializeCheckoutUseCase {
 
     await this.cartValidator.validateItems(dto.items);
 
+    for (const item of dto.items) {
+      if (!item.product_id?.trim()) {
+        throw new ValidationError('Each cart item must include product_id');
+      }
+    }
+
     const stockResults = await this.cartValidator.checkStock(dto.items);
     const outOfStock = stockResults.filter((s) => !s.available);
     if (outOfStock.length > 0) {
@@ -46,45 +57,82 @@ export class InitializeCheckoutUseCase {
       throw new ValidationError(`Items out of stock: ${ids}`);
     }
 
-    let totalCents = stockResults.reduce((sum, s) => sum + s.available_quantity, 0);
-    let promoDiscount = 0;
+    const subtotalCents = dto.items.reduce((sum, item) => {
+      const unit = typeof item.price_usd === 'number' ? item.price_usd : 0;
+      return sum + unit * item.quantity;
+    }, 0);
+    if (subtotalCents <= 0) {
+      throw new ValidationError('Invalid cart subtotal');
+    }
 
-    if (dto.promo_code) {
-      const promoResult = await this.promoValidator.validate(dto.promo_code, dto.items, userId);
+    const currencyStripe = (dto.currency ?? 'usd').trim().toLowerCase();
+    const currencyOrder = currencyStripe.toUpperCase();
+
+    if (dto.promo_code?.trim() && !userId && !(dto.customer_email?.trim())) {
+      throw new ValidationError('Email is required to apply a promo code');
+    }
+
+    let discountAmountCents = 0;
+    let promoCodeId: string | null = null;
+    if (dto.promo_code?.trim()) {
+      const promoResult = await this.promoValidator.validate(dto.promo_code.trim(), dto.items, {
+        userId,
+        guestEmail: dto.customer_email,
+        checkoutCurrency: currencyOrder,
+      });
       if (promoResult.valid) {
-        promoDiscount = promoResult.discount_cents;
+        discountAmountCents = promoResult.discount_cents;
+        promoCodeId = promoResult.promo_code_id ?? null;
       }
     }
 
-    totalCents = Math.max(totalCents - promoDiscount, 1);
-    const currency = dto.currency ?? 'usd';
+    const chargedCents = Math.max(subtotalCents - discountAmountCents, 1);
+    const paymentProviderName = normalizePaymentProviderName(dto.payment_provider);
+
+    const draft = await this.checkoutRepo.createOrder({
+      user_id: userId,
+      session_id: dto.session_id ?? null,
+      ip_address: ipAddress ?? null,
+      payment_provider: paymentProviderName,
+      items: dto.items,
+      subtotal_cents: subtotalCents,
+      discount_amount_cents: discountAmountCents,
+      total_amount_cents: chargedCents,
+      currency: currencyOrder,
+      promo_code_id: promoCodeId,
+      customer_email: dto.customer_email,
+      customer_name: dto.customer_name,
+      billing_address: dto.billing_address ?? null,
+    });
 
     const paymentIntent = await this.paymentProvider.createPaymentIntent({
-      amount_cents: totalCents,
-      currency,
+      amount_cents: chargedCents,
+      currency: currencyStripe,
       metadata: {
-        user_id: userId ?? '',
+        order_id: draft.id,
+        order_number: draft.order_number ?? '',
         session_id: dto.session_id ?? '',
+        user_id: userId ?? '',
       },
     });
 
-    const order = await this.checkoutRepo.createOrder({
-      user_id: userId,
-      session_id: dto.session_id,
-      items: dto.items,
-      total_cents: totalCents,
-      currency,
-      payment_intent_id: paymentIntent.id,
-      promo_code: dto.promo_code,
+    await this.checkoutRepo.updateOrder(draft.id, {
+      provider_payment_id: paymentIntent.id,
     });
 
-    logger.info('Checkout initialized', { orderId: order.id, totalCents, currency });
+    logger.info('Checkout initialized', { orderId: draft.id, totalCents: chargedCents, currency: currencyStripe });
 
     return {
-      order_id: order.id,
+      success: true,
+      order_id: draft.id,
+      order_number: draft.order_number ?? '',
       client_secret: paymentIntent.client_secret,
-      total_cents: totalCents,
-      currency,
+      total_cents: chargedCents,
+      currency: currencyStripe,
+      payment_provider: paymentProviderName,
+      promo_code: discountAmountCents > 0 && dto.promo_code ? dto.promo_code.trim().toUpperCase() : null,
+      discount_amount_cents: discountAmountCents,
+      wallet_redeem_cents: typeof dto.wallet_redeem_cents === 'number' ? dto.wallet_redeem_cents : 0,
     };
   }
 }

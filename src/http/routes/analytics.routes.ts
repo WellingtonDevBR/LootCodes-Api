@@ -126,21 +126,14 @@ export async function analyticsRoutes(app: FastifyInstance) {
           properties: {
             session_id: { type: 'string', minLength: 1 },
             user_id: { type: 'string' },
-            page_path: { type: 'string' },
-            referrer: { type: 'string' },
-            traffic_source: { type: 'string' },
-            utm_source: { type: 'string' },
-            utm_medium: { type: 'string' },
-            utm_campaign: { type: 'string' },
-            device_type: { type: 'string' },
-            browser: { type: 'string' },
-            os: { type: 'string' },
-            screen_resolution: { type: 'string' },
-            language: { type: 'string' },
-            country_code: { type: 'string' },
             user_agent: { type: 'string' },
             merge_anonymous: { type: 'boolean' },
             auto_consolidate: { type: 'boolean' },
+            ip_address: { type: 'string', maxLength: 45 },
+            country_code: { type: 'string', maxLength: 2 },
+            city: { type: 'string', maxLength: 100 },
+            region: { type: 'string', maxLength: 100 },
+            started_at: { type: 'string', maxLength: 40 },
           },
           additionalProperties: false,
         },
@@ -148,11 +141,40 @@ export async function analyticsRoutes(app: FastifyInstance) {
     },
     async (request, reply) => {
       const uc = container.resolve<TrackBatchUseCase>(UC_TOKENS.TrackBatch);
-      const { session_id, user_id, ...rest } = request.body;
+      const { session_id, user_id, user_agent: bodyUa, merge_anonymous, auto_consolidate, ...geo } =
+        request.body;
+
+      const reqCtx = buildRequestContext(request, request.body as unknown as Record<string, unknown>);
+      const resolvedIp =
+        typeof geo.ip_address === 'string' && geo.ip_address.trim().length > 0
+          ? geo.ip_address
+          : reqCtx.clientIP !== 'unknown'
+            ? reqCtx.clientIP
+            : undefined;
+
       await uc.execute(
-        { events: [{ action: 'session-upsert', payload: { ...rest, session_id, user_id } }] },
+        {
+          events: [
+            {
+              action: 'session-upsert',
+              payload: {
+                session_id,
+                user_id,
+                merge_anonymous,
+                auto_consolidate,
+                user_agent: bodyUa ?? (typeof reqCtx.userAgent === 'string' ? reqCtx.userAgent : undefined),
+                ip_address: resolvedIp,
+                country_code: geo.country_code,
+                city: geo.city,
+                region: geo.region,
+                started_at: geo.started_at,
+                client_channel: reqCtx.channel,
+              },
+            },
+          ],
+        },
         session_id,
-        user_id,
+        typeof user_id === 'string' && user_id.length > 0 ? user_id : undefined,
       );
       return reply.code(204).send();
     },

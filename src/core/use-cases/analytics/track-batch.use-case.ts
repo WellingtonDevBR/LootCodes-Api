@@ -3,13 +3,10 @@ import { TOKENS } from '../../../di/tokens.js';
 import type { IAnalyticsRepository } from '../../ports/analytics-repository.port.js';
 import type {
   BatchEventsDto,
-  BatchedEventEnvelope,
   PageViewEvent,
   ActivityEvent,
   SessionOutcomeDto,
-  ProductViewDurationDto,
   SearchEventDto,
-  SessionUpsertDto,
 } from './analytics.types.js';
 import { createLogger } from '../../../shared/logger.js';
 
@@ -101,25 +98,26 @@ export class TrackBatchUseCase {
           processed++;
           break;
 
-        case 'session-upsert':
+        case 'session-upsert': {
+          const ch = payload.client_channel;
+          const client_channel =
+            ch === 'web' || ch === 'mobile_app' || ch === 'unknown' ? ch : undefined;
           await this.analyticsRepo.upsertSession({
             session_id: resolvedSessionId,
             user_id: resolvedUserId,
-            page_path: payload.page_path as string | undefined,
-            referrer: payload.referrer as string | undefined,
-            traffic_source: payload.traffic_source as string | undefined,
-            utm_source: payload.utm_source as string | undefined,
-            utm_medium: payload.utm_medium as string | undefined,
-            utm_campaign: payload.utm_campaign as string | undefined,
-            device_type: payload.device_type as string | undefined,
-            browser: payload.browser as string | undefined,
-            os: payload.os as string | undefined,
-            screen_resolution: payload.screen_resolution as string | undefined,
-            language: payload.language as string | undefined,
-            country_code: payload.country_code as string | undefined,
-          } as SessionUpsertDto);
+            ip_address: (payload.ip_address as string | undefined) ?? null,
+            country_code: (payload.country_code as string | undefined) ?? null,
+            city: (payload.city as string | undefined) ?? null,
+            region: (payload.region as string | undefined) ?? null,
+            started_at: (payload.started_at as string | undefined) ?? null,
+            user_agent: (payload.user_agent as string | undefined) ?? null,
+            merge_anonymous: payload.merge_anonymous === true,
+            auto_consolidate: payload.auto_consolidate === true,
+            client_channel: client_channel ?? null,
+          });
           processed++;
           break;
+        }
 
         case 'search':
           await this.analyticsRepo.trackSearchEvent({

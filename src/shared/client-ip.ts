@@ -24,6 +24,14 @@ export function isValidIP(ip: string): boolean {
   return IPV4_REGEX.test(trimmed) || IPV6_REGEX.test(trimmed);
 }
 
+/** Value safe for Postgres `inet` columns (not valid → null; never literal `unknown`). */
+export function inetColumnOrNull(ip: string | null | undefined): string | null {
+  if (!ip || typeof ip !== 'string') return null;
+  const trimmed = ip.trim();
+  if (!trimmed || trimmed === 'unknown') return null;
+  return isValidIP(trimmed) ? trimmed : null;
+}
+
 export function isPrivateOrLocalhost(ip: string): boolean {
   if (!ip || typeof ip !== 'string') return true;
   const trimmed = ip.trim();

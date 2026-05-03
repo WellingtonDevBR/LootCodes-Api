@@ -45,4 +45,6 @@ export interface UpsertSessionDto {
   client_channel?: string;
   fingerprint_hash?: string;
   merge_anonymous?: boolean;
+  /** Defaults true when omitted (checkout / profile consolidate). */
+  auto_consolidate?: boolean;
 }

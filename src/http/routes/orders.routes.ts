@@ -327,4 +327,40 @@ export async function orderRoutes(app: FastifyInstance) {
       return reply.send({ logs });
     },
   );
+
+  app.get<{ Params: { id: string }; Querystring: { type?: string } }>(
+    '/:id/verification-ticket',
+    {
+      schema: {
+        params: orderIdParamsSchema,
+        querystring: {
+          type: 'object',
+          properties: {
+            type: { type: 'string', enum: ['id_verification', 'security_verification', 'all'] },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const ticketRepo = container.resolve<import('../../core/ports/support-ticket-repository.port.js').ISupportTicketRepository>(TOKENS.SupportTicketRepository);
+      const { id } = request.params;
+      const queryType = request.query.type ?? 'all';
+      const ticketTypes = queryType === 'id_verification'
+        ? ['id_verification']
+        : queryType === 'security_verification'
+          ? ['security_verification']
+          : ['id_verification', 'security_verification'];
+
+      const ticket = await ticketRepo.findVerificationTicketForOrder(id, ticketTypes);
+      if (!ticket) return reply.send({ ticket: null });
+      return reply.send({
+        ticket: {
+          id: ticket.id,
+          ticket_number: ticket.ticket_number,
+          status: ticket.status,
+          ticket_type: ticket.ticket_type,
+        },
+      });
+    },
+  );
 }

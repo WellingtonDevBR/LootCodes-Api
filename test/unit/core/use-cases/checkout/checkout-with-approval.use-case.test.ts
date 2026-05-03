@@ -8,6 +8,8 @@ describe('CheckoutWithApprovalUseCase', () => {
   let mocks: TestMocks;
   let useCase: CheckoutWithApprovalUseCase;
 
+  const line = { variant_id: 'var-1', product_id: 'prod-1', quantity: 1, price_usd: 2999 };
+
   beforeEach(() => {
     mocks = setupTestContainer();
     useCase = container.resolve<CheckoutWithApprovalUseCase>(UC_TOKENS.CheckoutWithApproval);
@@ -22,7 +24,7 @@ describe('CheckoutWithApprovalUseCase', () => {
       {
         approval_token: 'valid-token',
         hold_id: 'hold-1',
-        items: [{ variant_id: 'var-1', quantity: 1 }],
+        items: [line],
       },
       'user-1',
     );
@@ -37,7 +39,7 @@ describe('CheckoutWithApprovalUseCase', () => {
         {
           approval_token: 'bad-token',
           hold_id: 'hold-1',
-          items: [{ variant_id: 'var-1', quantity: 1 }],
+          items: [line],
         },
         'user-1',
       ),
@@ -66,7 +68,7 @@ describe('CheckoutWithApprovalUseCase', () => {
       {
         approval_token: 'valid-token',
         hold_id: 'hold-1',
-        items: [{ variant_id: 'var-1', quantity: 1 }],
+        items: [line],
         promo_code: 'PROMO',
       },
       'user-1',

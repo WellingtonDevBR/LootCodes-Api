@@ -15,7 +15,7 @@ import type { IOrderAccessTokenRepository } from '../../src/core/ports/order-acc
 import type { IPaymentGateway, PaymentStatus } from '../../src/core/ports/payment-gateway.port.js';
 import type { IPaymentProvider, PaymentIntent, CreatePaymentIntentParams } from '../../src/core/ports/payment-provider.port.js';
 import type { ICheckoutRepository, CreateOrderParams } from '../../src/core/ports/checkout-repository.port.js';
-import type { IPromoCodeValidator } from '../../src/core/ports/promo-code-validator.port.js';
+import type { IPromoCodeValidator, PromoValidateContext } from '../../src/core/ports/promo-code-validator.port.js';
 import type { ICartValidator } from '../../src/core/ports/cart-validator.port.js';
 import type { ISupportTicketRepository } from '../../src/core/ports/support-ticket-repository.port.js';
 import type { IAttachmentStorage } from '../../src/core/ports/attachment-storage.port.js';
@@ -54,7 +54,12 @@ import type { SearchResult } from '../../src/core/use-cases/search/search.types.
 
 import type { UserProfile, UpsertProfileDto, UserSession, UpsertSessionDto } from '../../src/core/use-cases/profile/profile.types.js';
 import type { Order, OrderItem, OrderDetail, ProductKey, KeyViewLog, KeyAccessAttemptLog, OrderAccessToken, PaginationParams, UserOrderWithRelations } from '../../src/core/use-cases/orders/order.types.js';
-import type { CartItem, PromoValidationResult, StockCheckResult as CheckoutStockResult } from '../../src/core/use-cases/checkout/checkout.types.js';
+import type {
+  CartItem,
+  PromoValidationResult,
+  PaymentMethodsConfig,
+  StockCheckResult as CheckoutStockResult,
+} from '../../src/core/use-cases/checkout/checkout.types.js';
 import type { SupportTicket, SupportTicketWithMessages, TicketMessage, TicketDetail, CreateTicketDto, TicketFeedbackDto } from '../../src/core/use-cases/support/support.types.js';
 import type { LibraryEntry, LibraryProductDetails, SetLibraryStatusDto, UpdateLibraryEntryDto } from '../../src/core/use-cases/library/library.types.js';
 import type { Notification, NotificationPreferences, UpdatePreferencesDto } from '../../src/core/use-cases/notifications/notification.types.js';
@@ -67,7 +72,7 @@ import type { NewsletterSubscribeDto, NewsletterResult } from '../../src/core/us
 import type { SecurityHold, SecurityHoldStatus, SubmitHoldResponseDto } from '../../src/core/use-cases/security/security.types.js';
 import type { CardChallenge, StartChallengeDto, VerifyChallengeDto, VerifyChallengeResult, ChooseIdResult } from '../../src/core/use-cases/card-challenge/card-challenge.types.js';
 import type { PriceMatchClaim, PriceMatchClaimSubmission, PriceMatchClaimResult, PriceMatchConfig } from '../../src/core/use-cases/price-match/price-match.types.js';
-import type { VerifyPaymentDto, PaymentVerificationResult, RiskAssessment, RiskAssessmentInput, FulfillmentResult, CapturePaymentDto, CaptureResult, WebhookEvent, WebhookProcessResult } from '../../src/core/use-cases/payments/payment.types.js';
+import type { VerifyPaymentDto, ProviderPaymentStatus, RiskAssessment, RiskAssessmentInput, FulfillmentResult, CapturePaymentDto, CaptureResult, WebhookEvent, WebhookProcessResult } from '../../src/core/use-cases/payments/payment.types.js';
 
 // ─── Infrastructure ──────────────────────────────────────────────
 
@@ -253,8 +258,16 @@ export class MockPaymentGateway implements IPaymentGateway {
 // ─── Checkout ────────────────────────────────────────────────────
 
 export class MockPaymentProvider implements IPaymentProvider {
+  private piSeq = 0;
   async createPaymentIntent(params: CreatePaymentIntentParams): Promise<PaymentIntent> {
-    return { id: 'pi_mock', client_secret: 'pi_mock_secret', status: 'requires_payment_method', amount_cents: params.amount_cents, currency: params.currency };
+    this.piSeq += 1;
+    return {
+      id: `pi_mock_${this.piSeq}`,
+      client_secret: 'pi_mock_secret',
+      status: 'requires_payment_method',
+      amount_cents: params.amount_cents,
+      currency: params.currency,
+    };
   }
   async confirmPayment(_intentId: string): Promise<PaymentIntent> {
     return { id: 'pi_mock', client_secret: 'pi_mock_secret', status: 'succeeded', amount_cents: 2999, currency: 'usd' };
@@ -267,25 +280,48 @@ export class MockPaymentProvider implements IPaymentProvider {
 
 export class MockCheckoutRepository implements ICheckoutRepository {
   public orders: Record<string, Record<string, unknown>> = {};
-  async createOrder(params: CreateOrderParams): Promise<{ id: string }> {
+
+  async createOrder(params: CreateOrderParams): Promise<{ id: string; order_number: string | null }> {
     const id = `order-${Date.now()}`;
-    this.orders[id] = { ...params, id };
-    return { id };
+    const order_number = `ORD-${id.slice(-8)}`;
+    this.orders[id] = { ...params, id, order_number };
+    return { id, order_number };
   }
-  async updateOrder(orderId: string, data: Record<string, unknown>): Promise<void> { this.orders[orderId] = { ...this.orders[orderId], ...data }; }
-  async cancelOrder(orderId: string): Promise<void> { delete this.orders[orderId]; }
-  async getOrder(orderId: string): Promise<Record<string, unknown> | null> { return this.orders[orderId] ?? null; }
-  async getPaymentMethodsConfig() {
+
+  async replaceOrderItems(_orderId: string, _items: CartItem[]): Promise<void> {}
+
+  async updateOrder(orderId: string, data: Record<string, unknown>): Promise<void> {
+    this.orders[orderId] = { ...(this.orders[orderId] ?? {}), ...data };
+  }
+
+  async cancelOrder(orderId: string): Promise<void> {
+    delete this.orders[orderId];
+  }
+
+  async getOrder(orderId: string): Promise<Record<string, unknown> | null> {
+    return this.orders[orderId] ?? null;
+  }
+
+  async getPaymentMethodsConfig(): Promise<PaymentMethodsConfig> {
     return {
-      stripe: { card: true, google_pay: true, apple_pay: true, link: true },
-      paypal: { enabled: true },
+      stripe: {
+        card_enabled: true,
+        apple_pay_enabled: true,
+        google_pay_enabled: true,
+      },
+      paypal: {
+        smart_buttons_enabled: true,
+        pay_later_enabled: true,
+        credit_enabled: true,
+        card_fields_enabled: false,
+      },
     };
   }
 }
 
 export class MockPromoCodeValidator implements IPromoCodeValidator {
   public validCodes = new Map<string, PromoValidationResult>();
-  async validate(code: string, _items: CartItem[], _userId?: string): Promise<PromoValidationResult> {
+  async validate(code: string, _items: CartItem[], _ctx?: PromoValidateContext): Promise<PromoValidationResult> {
     return this.validCodes.get(code) ?? { valid: false, discount_cents: 0, message: 'Invalid promo code' };
   }
   async recordUsage(): Promise<void> {}
@@ -321,6 +357,7 @@ export class MockSupportTicketRepository implements ISupportTicketRepository {
   }
   async submitFeedback(_ticketId: string, _feedback: TicketFeedbackDto): Promise<void> {}
   async getVerificationTicketsForOrder(_orderId: string): Promise<SupportTicket[]> { return []; }
+  async findVerificationTicketForOrder(_orderId: string, _ticketTypes: string[]): Promise<SupportTicket | null> { return null; }
 }
 
 export class MockAttachmentStorage implements IAttachmentStorage {
@@ -529,6 +566,7 @@ export class MockSecurityHoldRepository implements ISecurityHoldRepository {
   async checkRateLimit(_identifier: string, _identifierType: string, _actionType: string): Promise<boolean> { return !this.rateLimited; }
   async recordAttempt(_identifier: string, _identifierType: string, _actionType: string): Promise<void> {}
   async resolveByToken(_token: string): Promise<{ success: boolean; error?: string }> { return this.resolveResult; }
+  async createHold(_params: import('../../src/core/ports/security-hold-repository.port.js').CreateSecurityHoldParams): Promise<{ id: string }> { return { id: `hold-${Date.now()}` }; }
 }
 
 export class MockVerificationStorage implements IVerificationStorage {
@@ -585,8 +623,8 @@ export class MockPriceMatchRepository implements IPriceMatchRepository {
 // ─── Payment Verification + Capture ──────────────────────────────
 
 export class MockPaymentVerifier implements IPaymentVerifier {
-  public result: PaymentVerificationResult = { status: 'fulfilled', order_id: 'order-123' };
-  async verifyPayment(_dto: VerifyPaymentDto): Promise<PaymentVerificationResult> { return this.result; }
+  public result: ProviderPaymentStatus = { status: 'fulfilled', order_id: 'order-123' };
+  async verifyPayment(_dto: VerifyPaymentDto): Promise<ProviderPaymentStatus> { return this.result; }
 }
 
 export class MockRiskAssessor implements IRiskAssessor {

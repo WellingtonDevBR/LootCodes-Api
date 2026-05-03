@@ -66,7 +66,7 @@ export const approvalCheckoutBodySchema = {
 
 export const updateCheckoutBodySchema = {
   type: 'object',
-  required: ['order_id'],
+  required: ['order_id', 'items'],
   properties: {
     order_id: { type: 'string', format: 'uuid' },
     items: { type: 'array', items: cartItemSchema, minItems: 1, maxItems: 20 },

@@ -12,7 +12,7 @@ vi.mock('../../../src/http/middleware/rate-limit.guard.js', () => ({
 describe('Payment Routes (Guest-safe)', () => {
   let app: FastifyInstance;
 
-  const mockVerifyResult = { status: 'fulfilled', order_id: 'order-123' };
+  const mockVerifyResult = { success: true, status: 'verified', order_id: 'order-123', order_number: 'ORD-001' };
   const mockCaptureResult = { captured: true, payment_intent_id: 'pi_test', amount_cents: 2999 };
 
   beforeEach(async () => {
@@ -50,8 +50,9 @@ describe('Payment Routes (Guest-safe)', () => {
 
       expect(response.statusCode).toBe(200);
       const body = JSON.parse(response.body);
-      expect(body.status).toBe('fulfilled');
+      expect(body.status).toBe('verified');
       expect(body.order_id).toBe('order-123');
+      expect(body.success).toBe(true);
     });
 
     it('rejects invalid payment_intent_id (schema validation)', async () => {

@@ -128,12 +128,10 @@ describe('TrackBatchUseCase', () => {
           {
             action: 'session-upsert',
             payload: {
-              page_path: '/checkout',
-              traffic_source: 'google',
-              device_type: 'mobile',
-              browser: 'Chrome',
-              os: 'iOS',
               country_code: 'US',
+              merge_anonymous: false,
+              auto_consolidate: true,
+              client_channel: 'web',
             },
           },
         ],
@@ -147,12 +145,10 @@ describe('TrackBatchUseCase', () => {
     expect(mockRepo.sessionUpserts[0]).toMatchObject({
       session_id: SESSION_ID,
       user_id: USER_ID,
-      page_path: '/checkout',
-      traffic_source: 'google',
-      device_type: 'mobile',
-      browser: 'Chrome',
-      os: 'iOS',
       country_code: 'US',
+      merge_anonymous: false,
+      auto_consolidate: true,
+      client_channel: 'web',
     });
   });
 
@@ -183,7 +179,7 @@ describe('TrackBatchUseCase', () => {
           { action: 'activity-event', payload: { event_type: 'scroll' } },
           { action: 'session-outcome', payload: { outcome: 'browse' } },
           { action: 'product-view-duration', payload: { product_id: 'p1', duration_seconds: 10 } },
-          { action: 'session-upsert', payload: { device_type: 'desktop' } },
+          { action: 'session-upsert', payload: { merge_anonymous: false, auto_consolidate: false } },
           { action: 'search', payload: { query: 'test', results_count: 3 } },
         ],
       },
