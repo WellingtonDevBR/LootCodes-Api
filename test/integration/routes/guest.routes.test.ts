@@ -16,7 +16,7 @@ describe('Guest Routes', () => {
     await app.close();
   });
 
-  describe('POST /api/guest/session', () => {
+  describe('POST /guest/session', () => {
     it('should exchange a valid token for a guest session', async () => {
       mocks.guestSessionRepo.addSession('valid-raw-token', {
         token: 'valid-raw-token',
@@ -27,7 +27,7 @@ describe('Guest Routes', () => {
 
       const res = await app.inject({
         method: 'POST',
-        url: '/api/guest/session',
+        url: '/guest/session',
         payload: { token: 'valid-raw-token' },
       });
 
@@ -41,7 +41,7 @@ describe('Guest Routes', () => {
     it('should return 401 for an invalid token', async () => {
       const res = await app.inject({
         method: 'POST',
-        url: '/api/guest/session',
+        url: '/guest/session',
         payload: { token: 'nonexistent-token' },
       });
 
@@ -53,7 +53,7 @@ describe('Guest Routes', () => {
     it('should return 400 when token is missing', async () => {
       const res = await app.inject({
         method: 'POST',
-        url: '/api/guest/session',
+        url: '/guest/session',
         payload: {},
       });
 
@@ -61,13 +61,13 @@ describe('Guest Routes', () => {
     });
   });
 
-  describe('GET /api/guest/orders/:orderId', () => {
+  describe('GET /guest/orders/:orderId', () => {
     it('should return 401 when no guest token is provided', async () => {
       const orderId = '550e8400-e29b-41d4-a716-446655440000';
 
       const res = await app.inject({
         method: 'GET',
-        url: `/api/guest/orders/${orderId}`,
+        url: `/guest/orders/${orderId}`,
       });
 
       expect(res.statusCode).toBe(401);
@@ -80,7 +80,7 @@ describe('Guest Routes', () => {
 
       const res = await app.inject({
         method: 'GET',
-        url: `/api/guest/orders/${orderId}`,
+        url: `/guest/orders/${orderId}`,
         headers: { 'x-guest-token': 'bad-token' },
       });
 
@@ -107,7 +107,7 @@ describe('Guest Routes', () => {
 
       const res = await app.inject({
         method: 'GET',
-        url: `/api/guest/orders/${orderId}`,
+        url: `/guest/orders/${orderId}`,
         headers: { 'x-guest-token': 'valid-guest-token' },
       });
 
@@ -136,7 +136,7 @@ describe('Guest Routes', () => {
 
       const res = await app.inject({
         method: 'GET',
-        url: `/api/guest/orders/${orderId}`,
+        url: `/guest/orders/${orderId}`,
         headers: { cookie: 'guest_session=cookie-token' },
       });
 

@@ -16,11 +16,11 @@ describe('Product Routes', () => {
     await app.close();
   });
 
-  describe('GET /api/products/slug/:slug', () => {
+  describe('GET /products/slug/:slug', () => {
     it('should return 404 for a nonexistent product slug', async () => {
       const res = await app.inject({
         method: 'GET',
-        url: '/api/products/slug/nonexistent-game',
+        url: '/products/slug/nonexistent-game',
       });
 
       expect(res.statusCode).toBe(404);
@@ -47,7 +47,7 @@ describe('Product Routes', () => {
 
       const res = await app.inject({
         method: 'GET',
-        url: '/api/products/slug/test-game',
+        url: '/products/slug/test-game',
       });
 
       expect(res.statusCode).toBe(200);
@@ -57,11 +57,11 @@ describe('Product Routes', () => {
     });
   });
 
-  describe('GET /api/products/platforms', () => {
+  describe('GET /products/platforms', () => {
     it('should return a list of platforms', async () => {
       const res = await app.inject({
         method: 'GET',
-        url: '/api/products/platforms',
+        url: '/products/platforms',
       });
 
       expect(res.statusCode).toBe(200);
@@ -73,11 +73,11 @@ describe('Product Routes', () => {
     });
   });
 
-  describe('GET /api/products/regions', () => {
+  describe('GET /products/regions', () => {
     it('should return a list of regions', async () => {
       const res = await app.inject({
         method: 'GET',
-        url: '/api/products/regions',
+        url: '/products/regions',
       });
 
       expect(res.statusCode).toBe(200);
@@ -89,11 +89,11 @@ describe('Product Routes', () => {
     });
   });
 
-  describe('GET /api/products/featured', () => {
+  describe('GET /products/featured', () => {
     it('should return an empty array when no featured products exist', async () => {
       const res = await app.inject({
         method: 'GET',
-        url: '/api/products/featured',
+        url: '/products/featured',
       });
 
       expect(res.statusCode).toBe(200);
@@ -103,11 +103,11 @@ describe('Product Routes', () => {
     });
   });
 
-  describe('GET /api/products/genres', () => {
+  describe('GET /products/genres', () => {
     it('should return a list of genres', async () => {
       const res = await app.inject({
         method: 'GET',
-        url: '/api/products/genres',
+        url: '/products/genres',
       });
 
       expect(res.statusCode).toBe(200);

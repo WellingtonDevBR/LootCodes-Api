@@ -89,8 +89,9 @@ describe('HandleAuthUseCase', () => {
         baseCtx,
       );
 
-      expect(result.success).toBe(true);
-      expect(result.requiresVerification).toBe(true);
+      expect(result.success).toBe(false);
+      expect(result.emailVerificationRequired).toBe(true);
+      expect(mocks.email.sent.length).toBe(1);
     });
 
     it('should reject sign up without full_name', async () => {

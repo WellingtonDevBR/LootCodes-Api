@@ -16,7 +16,7 @@ describe('Auth Routes', () => {
     await app.close();
   });
 
-  describe('POST /api/auth (generic)', () => {
+  describe('POST /auth (generic)', () => {
     it('should handle sign-in via generic endpoint', async () => {
       mocks.auth.addUser('test@example.com', 'password123', {
         id: 'user-1',
@@ -26,7 +26,7 @@ describe('Auth Routes', () => {
 
       const res = await app.inject({
         method: 'POST',
-        url: '/api/auth',
+        url: '/auth',
         payload: {
           action: 'sign_in',
           email: 'test@example.com',
@@ -44,7 +44,7 @@ describe('Auth Routes', () => {
     it('should return 400 for missing action', async () => {
       const res = await app.inject({
         method: 'POST',
-        url: '/api/auth',
+        url: '/auth',
         payload: { email: 'test@example.com' },
       });
 
@@ -52,7 +52,7 @@ describe('Auth Routes', () => {
     });
   });
 
-  describe('POST /api/auth/sign-in', () => {
+  describe('POST /auth/sign-in', () => {
     it('should sign in successfully', async () => {
       mocks.auth.addUser('test@example.com', 'pass123', {
         id: 'user-2',
@@ -62,7 +62,7 @@ describe('Auth Routes', () => {
 
       const res = await app.inject({
         method: 'POST',
-        url: '/api/auth/sign-in',
+        url: '/auth/sign-in',
         payload: {
           email: 'test@example.com',
           password: 'pass123',
@@ -77,11 +77,11 @@ describe('Auth Routes', () => {
     });
   });
 
-  describe('POST /api/auth/sign-up', () => {
+  describe('POST /auth/sign-up', () => {
     it('should sign up successfully', async () => {
       const res = await app.inject({
         method: 'POST',
-        url: '/api/auth/sign-up',
+        url: '/auth/sign-up',
         payload: {
           email: 'new@example.com',
           password: 'password123',
@@ -93,16 +93,16 @@ describe('Auth Routes', () => {
 
       expect(res.statusCode).toBe(200);
       const body = JSON.parse(res.payload);
-      expect(body.success).toBe(true);
-      expect(body.requiresVerification).toBe(true);
+      expect(body.success).toBe(false);
+      expect(body.emailVerificationRequired).toBe(true);
     });
   });
 
-  describe('POST /api/auth/password-reset', () => {
+  describe('POST /auth/password-reset', () => {
     it('should always return success', async () => {
       const res = await app.inject({
         method: 'POST',
-        url: '/api/auth/password-reset',
+        url: '/auth/password-reset',
         payload: {
           email: 'test@example.com',
           recaptcha_token: 'valid',
@@ -115,11 +115,11 @@ describe('Auth Routes', () => {
     });
   });
 
-  describe('POST /api/auth/phone/send-otp', () => {
+  describe('POST /auth/phone/send-otp', () => {
     it('should send OTP', async () => {
       const res = await app.inject({
         method: 'POST',
-        url: '/api/auth/phone/send-otp',
+        url: '/auth/phone/send-otp',
         payload: { phone: '+1234567890' },
       });
 

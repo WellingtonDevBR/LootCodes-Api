@@ -86,6 +86,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   registerIpBlocklistHook(app);
 
   await app.register(healthRoutes, { prefix: '/health' });
+  // Routes are rooted at the API host (e.g. https://api.lootcodes.com/auth/...), not /api/auth.
   await app.register(authRoutes, { prefix: '/auth' });
   await app.register(profileRoutes, { prefix: '/profile' });
   await app.register(orderRoutes, { prefix: '/orders' });

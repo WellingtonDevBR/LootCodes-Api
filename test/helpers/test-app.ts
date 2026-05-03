@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import { container } from 'tsyringe';
+import { loadEnv } from '../../src/config/env.js';
 import { TOKENS, UC_TOKENS } from '../../src/di/tokens.js';
 import { HandleAuthUseCase } from '../../src/core/use-cases/auth/handle-auth.use-case.js';
 import { InitializeCheckoutUseCase } from '../../src/core/use-cases/checkout/initialize-checkout.use-case.js';
@@ -205,6 +206,7 @@ import {
   MockPaymentCapturer,
   MockWebhookVerifier,
   MockWebhookHandler,
+  MockVerificationCodeService,
   MockGuestSessionRepository,
   MockCategoryRepository,
   MockPricingRepository,
@@ -259,6 +261,7 @@ export interface TestMocks {
   paymentCapturer: MockPaymentCapturer;
   webhookVerifier: MockWebhookVerifier;
   webhookHandler: MockWebhookHandler;
+  verificationCode: MockVerificationCodeService;
   guestSessionRepo: MockGuestSessionRepository;
   categoryRepo: MockCategoryRepository;
   pricingRepo: MockPricingRepository;
@@ -278,6 +281,7 @@ function setTestEnv() {
   process.env.RECAPTCHA_API_KEY = 'test-api-key';
   process.env.RESEND_API_KEY = 'test-resend-key';
   process.env.SITE_URL = 'https://test.lootcodes.com';
+  loadEnv();
 }
 
 function registerMocks(): TestMocks {
@@ -327,6 +331,7 @@ function registerMocks(): TestMocks {
     paymentCapturer: new MockPaymentCapturer(),
     webhookVerifier: new MockWebhookVerifier(),
     webhookHandler: new MockWebhookHandler(),
+    verificationCode: new MockVerificationCodeService(),
     guestSessionRepo: new MockGuestSessionRepository(),
     categoryRepo: new MockCategoryRepository(),
     pricingRepo: new MockPricingRepository(),
@@ -398,6 +403,7 @@ function registerMocks(): TestMocks {
   // Security
   container.register(TOKENS.SecurityHoldRepository, { useValue: mocks.securityHoldRepo });
   container.register(TOKENS.VerificationStorage, { useValue: mocks.verificationStorage });
+  container.register(TOKENS.VerificationCodeService, { useValue: mocks.verificationCode });
 
   // Card Challenge
   container.register(TOKENS.CardChallengeRepository, { useValue: mocks.cardChallengeRepo });

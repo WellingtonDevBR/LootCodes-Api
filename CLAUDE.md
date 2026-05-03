@@ -167,7 +167,7 @@ This keeps vendor-specific names (`p_email`, `p_ip_address`, RPC function names)
 - [ ] DB-backed rate limiter (`IRateLimiter`) for per-user/per-email limits
 
 ### IP & Client Validation
-- [x] IP blocklist hook (`ip-blocklist.hook.ts`) checks every request at the `onRequest` lifecycle (before auth/route). Exempt: `/health`, `/api/webhooks`
+- [x] IP blocklist hook (`ip-blocklist.hook.ts`) checks every request at the `onRequest` lifecycle (before auth/route). Exempt: `/health`, `/webhooks`
 - [x] `X-Requested-By` guard (`requested-by.guard.ts`) validates `lootcodes-web` or `lootcodes-app` client identity. Apply as `preHandler` where needed.
 
 ### HTTP Security Headers
@@ -319,7 +319,7 @@ import { buildTestApp } from '../../helpers/test-app';
 const { app, mocks } = await buildTestApp();
 mocks.userRepo.setUser('test@example.com', 'user-1');
 
-const res = await app.inject({ method: 'POST', url: '/api/auth/sign-in', payload: {...} });
+const res = await app.inject({ method: 'POST', url: '/auth/sign-in', payload: {...} });
 expect(res.statusCode).toBe(200);
 ```
 

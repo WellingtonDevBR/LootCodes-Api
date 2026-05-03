@@ -49,6 +49,11 @@ import type { IPricingRepository } from '../../src/core/ports/pricing-repository
 import type { IGeoRestrictionRepository } from '../../src/core/ports/geo-restriction-repository.port.js';
 import type { IRecommendationRepository } from '../../src/core/ports/recommendation-repository.port.js';
 import type { ISearchProvider } from '../../src/core/ports/search-provider.port.js';
+import type {
+  IVerificationCodeService,
+  GenerateCodeResult,
+  VerificationAction,
+} from '../../src/core/ports/verification-code.port.js';
 import type { Category, LocalizedPrice, ExcludedCountry, RestrictedVariant, RestrictedRegion, PlatformNavItem, PlatformFamily, RecommendedProduct, PopularProduct, RecommendationsBatch } from '../../src/core/use-cases/products/product.types.js';
 import type { SearchResult } from '../../src/core/use-cases/search/search.types.js';
 
@@ -158,6 +163,30 @@ export class MockIpBlocklist implements IIpBlocklist {
   public blockedIps = new Set<string>();
   block(ip: string) { this.blockedIps.add(ip); }
   async isBlocked(ipAddress: string): Promise<boolean> { return this.blockedIps.has(ipAddress); }
+}
+
+export class MockVerificationCodeService implements IVerificationCodeService {
+  public verifyReturns = true;
+
+  async generate(
+    _email: string,
+    _action: VerificationAction,
+    _ipAddress: string,
+    _requestId: string,
+    _expiresInMinutes?: number,
+  ): Promise<GenerateCodeResult> {
+    return { code: '123456', expiresAt: new Date(Date.now() + 600_000) };
+  }
+
+  async verify(
+    _email: string,
+    _action: VerificationAction,
+    code: string,
+    _ipAddress: string,
+    _requestId: string,
+  ): Promise<boolean> {
+    return this.verifyReturns && code === '123456';
+  }
 }
 
 // ─── Profile ─────────────────────────────────────────────────────
@@ -438,6 +467,35 @@ export class MockReviewRepository implements IReviewRepository {
 export class MockProductRepository implements IProductRepository {
   public products: Product[] = [];
   public variants: ProductVariant[] = [];
+
+  async findBySlugRaw(slug: string): Promise<Record<string, unknown> | null> {
+    const product = this.products.find((p) => p.slug === slug);
+    if (!product) return null;
+    const variants = this.variants.filter((v) => v.product_id === product.id);
+    const key_counts: Record<string, number> = {};
+    for (const v of variants) {
+      key_counts[v.id] = 1;
+    }
+    const variantRecords = variants.map((v) => ({
+      id: v.id,
+      slug: v.id,
+      product_id: v.product_id,
+      region_id: v.region_id ?? 'r-mock',
+      price_usd: v.price_usd,
+      retail_price_usd: v.retail_price_usd,
+      is_active: true,
+      purchasable: true,
+      platforms: [],
+    }));
+    return {
+      ...product,
+      variants: variantRecords,
+      key_counts,
+      gallery: [],
+      matched_variant_id: null,
+    };
+  }
+
   async findBySlug(slug: string): Promise<ProductPageData | null> {
     const product = this.products.find(p => p.slug === slug);
     return product ? { product, variants: this.variants.filter(v => v.product_id === product.id) } : null;

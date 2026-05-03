@@ -16,11 +16,11 @@ describe('Webhook Routes', () => {
     await app.close();
   });
 
-  describe('POST /api/webhooks/stripe', () => {
+  describe('POST /webhooks/stripe', () => {
     it('should return 400 when signature is missing', async () => {
       const res = await app.inject({
         method: 'POST',
-        url: '/api/webhooks/stripe',
+        url: '/webhooks/stripe',
         headers: { 'content-type': 'application/json' },
         payload: JSON.stringify({ id: 'evt_test', type: 'payment_intent.succeeded' }),
       });
@@ -39,7 +39,7 @@ describe('Webhook Routes', () => {
 
       const res = await app.inject({
         method: 'POST',
-        url: '/api/webhooks/stripe',
+        url: '/webhooks/stripe',
         headers: {
           'content-type': 'application/json',
           'stripe-signature': 'whsec_test_signature',
@@ -63,7 +63,7 @@ describe('Webhook Routes', () => {
 
       await app.inject({
         method: 'POST',
-        url: '/api/webhooks/stripe',
+        url: '/webhooks/stripe',
         headers: {
           'content-type': 'application/json',
           'stripe-signature': 'sig_test',
