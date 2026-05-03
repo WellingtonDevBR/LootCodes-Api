@@ -20,6 +20,10 @@ const envSchema = z.object({
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_PUBLISHABLE_KEY: z.string().optional().default(''),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
+
+  PAYPAL_CLIENT_ID: z.string().optional(),
+  PAYPAL_CLIENT_SECRET: z.string().optional(),
+  PAYPAL_ENVIRONMENT: z.enum(['sandbox', 'live']).optional(),
   PAYPAL_WEBHOOK_ID: z.string().optional(),
 
   ALGOLIA_APP_ID: z.string().optional(),

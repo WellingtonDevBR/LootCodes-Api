@@ -84,8 +84,11 @@ import { StripePaymentVerifierAdapter } from '../infra/payments/stripe-payment-v
 import { SupabaseRiskAssessorAdapter } from '../infra/payments/supabase-risk-assessor.adapter.js';
 import { SupabaseFulfillmentAdapter } from '../infra/payments/supabase-fulfillment.adapter.js';
 import { StripePaymentCapturerAdapter } from '../infra/payments/stripe-payment-capturer.adapter.js';
-import { StripeWebhookVerifierAdapter } from '../infra/payments/stripe-webhook-verifier.adapter.js';
+import { CompositeWebhookVerifierAdapter } from '../infra/payments/composite-webhook-verifier.adapter.js';
 import { SupabaseWebhookHandlerAdapter } from '../infra/payments/supabase-webhook-handler.adapter.js';
+
+// Payment provider factories (multi-provider support)
+import { PaymentProviderFactoryAdapter, PaymentCapturerFactoryAdapter, PaymentVerifierFactoryAdapter } from '../infra/payments/payment-provider-factory.adapter.js';
 
 // Recommendation adapters
 import { SupabaseRecommendationRepository } from '../infra/products/supabase-recommendation.repository.js';
@@ -330,6 +333,9 @@ container.register(TOKENS.PaymentGateway, { useClass: StripePaymentGatewayAdapte
 
 // --- Checkout ---
 container.register(TOKENS.PaymentProvider, { useClass: StripePaymentAdapter });
+container.register(TOKENS.PaymentProviderFactory, { useClass: PaymentProviderFactoryAdapter });
+container.register(TOKENS.PaymentCapturerFactory, { useClass: PaymentCapturerFactoryAdapter });
+container.register(TOKENS.PaymentVerifierFactory, { useClass: PaymentVerifierFactoryAdapter });
 container.register(TOKENS.CheckoutRepository, { useClass: SupabaseCheckoutRepository });
 container.register(TOKENS.PromoCodeValidator, { useClass: SupabasePromoCodeValidatorAdapter });
 container.register(TOKENS.CartValidator, { useClass: SupabaseCartValidatorAdapter });
@@ -391,7 +397,7 @@ container.register(TOKENS.FulfillmentService, { useClass: SupabaseFulfillmentAda
 container.register(TOKENS.PaymentCapturer, { useClass: StripePaymentCapturerAdapter });
 
 // --- Webhooks ---
-container.register(TOKENS.WebhookVerifier, { useClass: StripeWebhookVerifierAdapter });
+container.register(TOKENS.WebhookVerifier, { useClass: CompositeWebhookVerifierAdapter });
 container.register(TOKENS.WebhookHandler, { useClass: SupabaseWebhookHandlerAdapter });
 
 // --- Recommendations ---

@@ -800,6 +800,55 @@ export class MockCustomerResolver implements ICustomerResolver {
   async cacheCustomerId(_userId: string, _customerId: string): Promise<void> {}
 }
 
+// ─── Payment Provider Factories ─────────────────────────────────
+
+import type {
+  IPaymentProviderFactory,
+  IPaymentCapturerFactory,
+  IPaymentVerifierFactory,
+  PaymentProviderName,
+} from '../../src/core/ports/payment-provider-factory.port.js';
+
+export class MockPaymentProviderFactory implements IPaymentProviderFactory {
+  provider: MockPaymentProvider;
+
+  constructor(provider?: MockPaymentProvider) {
+    this.provider = provider ?? new MockPaymentProvider();
+  }
+
+  getProvider(_name: PaymentProviderName): IPaymentProvider {
+    return this.provider;
+  }
+
+  isProviderAvailable(_name: PaymentProviderName): boolean {
+    return true;
+  }
+}
+
+export class MockPaymentCapturerFactory implements IPaymentCapturerFactory {
+  capturer: MockPaymentCapturer;
+
+  constructor(capturer?: MockPaymentCapturer) {
+    this.capturer = capturer ?? new MockPaymentCapturer();
+  }
+
+  getCapturer(_name: PaymentProviderName): IPaymentCapturer {
+    return this.capturer;
+  }
+}
+
+export class MockPaymentVerifierFactory implements IPaymentVerifierFactory {
+  verifier: MockPaymentVerifier;
+
+  constructor(verifier?: MockPaymentVerifier) {
+    this.verifier = verifier ?? new MockPaymentVerifier();
+  }
+
+  getVerifier(_name: PaymentProviderName): IPaymentVerifier {
+    return this.verifier;
+  }
+}
+
 // ─── Search ─────────────────────────────────────────────────────
 
 export class MockSearchProvider implements ISearchProvider {

@@ -1,6 +1,6 @@
 import { injectable, inject } from 'tsyringe';
 import { TOKENS } from '../../../di/tokens.js';
-import type { IPaymentProvider } from '../../ports/payment-provider.port.js';
+import type { IPaymentProviderFactory, PaymentProviderName } from '../../ports/payment-provider-factory.port.js';
 import type { ICheckoutRepository } from '../../ports/checkout-repository.port.js';
 import type { IPromoCodeValidator } from '../../ports/promo-code-validator.port.js';
 import type { ICartValidator } from '../../ports/cart-validator.port.js';
@@ -14,7 +14,7 @@ import { createLogger } from '../../../shared/logger.js';
 
 const logger = createLogger('initialize-checkout-use-case');
 
-function normalizePaymentProviderName(raw?: string): string {
+function normalizePaymentProviderName(raw?: string): PaymentProviderName {
   const n = raw?.trim().toLowerCase();
   return n === 'paypal' ? 'paypal' : 'stripe';
 }
@@ -22,7 +22,7 @@ function normalizePaymentProviderName(raw?: string): string {
 @injectable()
 export class InitializeCheckoutUseCase {
   constructor(
-    @inject(TOKENS.PaymentProvider) private paymentProvider: IPaymentProvider,
+    @inject(TOKENS.PaymentProviderFactory) private providerFactory: IPaymentProviderFactory,
     @inject(TOKENS.CheckoutRepository) private checkoutRepo: ICheckoutRepository,
     @inject(TOKENS.PromoCodeValidator) private promoValidator: IPromoCodeValidator,
     @inject(TOKENS.CartValidator) private cartValidator: ICartValidator,
@@ -91,8 +91,15 @@ export class InitializeCheckoutUseCase {
     const chargedCents = Math.max(subtotalCents - discountAmountCents, 1);
     const paymentProviderName = normalizePaymentProviderName(dto.payment_provider);
 
+    if (!this.providerFactory.isProviderAvailable(paymentProviderName)) {
+      throw new ValidationError(`Payment provider "${paymentProviderName}" is not available`);
+    }
+
     const contactEmail = dto.customer_email?.trim().toLowerCase();
-    const customerId = await this.resolveCustomerId(userId, contactEmail);
+    // PayPal has no server-side customer concept — skip Stripe customer resolution
+    const customerId = paymentProviderName === 'stripe'
+      ? await this.resolveCustomerId(userId, contactEmail)
+      : null;
 
     if (userId && customerId) {
       this.customerResolver.cacheCustomerId(userId, customerId).catch(() => {});
@@ -115,7 +122,8 @@ export class InitializeCheckoutUseCase {
       provider_customer_id: customerId,
     });
 
-    const paymentIntent = await this.paymentProvider.createPaymentIntent({
+    const provider = this.providerFactory.getProvider(paymentProviderName);
+    const paymentIntent = await provider.createPaymentIntent({
       amount_cents: chargedCents,
       currency: currencyStripe,
       customer_id: customerId ?? undefined,

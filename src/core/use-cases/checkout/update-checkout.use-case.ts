@@ -3,14 +3,14 @@ import { TOKENS } from '../../../di/tokens.js';
 import type { ICheckoutRepository } from '../../ports/checkout-repository.port.js';
 import type { ICartValidator } from '../../ports/cart-validator.port.js';
 import type { IPromoCodeValidator } from '../../ports/promo-code-validator.port.js';
-import type { IPaymentProvider } from '../../ports/payment-provider.port.js';
+import type { IPaymentProviderFactory, PaymentProviderName } from '../../ports/payment-provider-factory.port.js';
 import type { CheckoutUpdateDto, CheckoutResult } from './checkout.types.js';
 import { NotFoundError, ForbiddenError, ValidationError } from '../../errors/domain-errors.js';
 import { createLogger } from '../../../shared/logger.js';
 
 const logger = createLogger('update-checkout-use-case');
 
-function normalizePaymentProviderName(raw?: string): string {
+function normalizePaymentProviderName(raw?: string): PaymentProviderName {
   const n = raw?.trim().toLowerCase();
   return n === 'paypal' ? 'paypal' : 'stripe';
 }
@@ -21,7 +21,7 @@ export class UpdateCheckoutUseCase {
     @inject(TOKENS.CheckoutRepository) private checkoutRepo: ICheckoutRepository,
     @inject(TOKENS.CartValidator) private cartValidator: ICartValidator,
     @inject(TOKENS.PromoCodeValidator) private promoValidator: IPromoCodeValidator,
-    @inject(TOKENS.PaymentProvider) private paymentProvider: IPaymentProvider,
+    @inject(TOKENS.PaymentProviderFactory) private providerFactory: IPaymentProviderFactory,
   ) {}
 
   async execute(dto: CheckoutUpdateDto, userId?: string): Promise<CheckoutResult> {
@@ -86,15 +86,25 @@ export class UpdateCheckoutUseCase {
     const chargedCents = Math.max(subtotalCents - discountAmountCents, 1);
     const providerName = normalizePaymentProviderName(dto.payment_provider);
 
+    if (!this.providerFactory.isProviderAvailable(providerName)) {
+      throw new ValidationError(`Payment provider "${providerName}" is not available`);
+    }
+
     await this.checkoutRepo.replaceOrderItems(dto.order_id, dto.items);
 
+    // Cancel the old payment intent/order from the previous provider
     const oldPid =
       typeof existingOrder.provider_payment_id === 'string' ? existingOrder.provider_payment_id : null;
     if (oldPid) {
-      await this.paymentProvider.cancelPayment(oldPid).catch(() => undefined);
+      const oldProviderName = normalizePaymentProviderName(
+        typeof existingOrder.payment_provider === 'string' ? existingOrder.payment_provider : undefined,
+      );
+      const oldProvider = this.providerFactory.getProvider(oldProviderName);
+      await oldProvider.cancelPayment(oldPid).catch(() => undefined);
     }
 
-    const pi = await this.paymentProvider.createPaymentIntent({
+    const provider = this.providerFactory.getProvider(providerName);
+    const pi = await provider.createPaymentIntent({
       amount_cents: chargedCents,
       currency: currencyStripe,
       metadata: {

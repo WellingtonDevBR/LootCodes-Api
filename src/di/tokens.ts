@@ -22,6 +22,9 @@ export const TOKENS = {
 
   // Checkout
   PaymentProvider: Symbol.for('IPaymentProvider'),
+  PaymentProviderFactory: Symbol.for('IPaymentProviderFactory'),
+  PaymentCapturerFactory: Symbol.for('IPaymentCapturerFactory'),
+  PaymentVerifierFactory: Symbol.for('IPaymentVerifierFactory'),
   CheckoutRepository: Symbol.for('ICheckoutRepository'),
   PromoCodeValidator: Symbol.for('IPromoCodeValidator'),
   CartValidator: Symbol.for('ICartValidator'),

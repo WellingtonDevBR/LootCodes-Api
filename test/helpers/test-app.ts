@@ -215,6 +215,9 @@ import {
   MockRecommendationRepository,
   MockSearchProvider,
   MockCustomerResolver,
+  MockPaymentProviderFactory,
+  MockPaymentCapturerFactory,
+  MockPaymentVerifierFactory,
 } from './mock-ports.js';
 
 export interface TestMocks {
@@ -271,6 +274,9 @@ export interface TestMocks {
   recommendationRepo: MockRecommendationRepository;
   searchProvider: MockSearchProvider;
   customerResolver: MockCustomerResolver;
+  paymentProviderFactory: MockPaymentProviderFactory;
+  paymentCapturerFactory: MockPaymentCapturerFactory;
+  paymentVerifierFactory: MockPaymentVerifierFactory;
 }
 
 function setTestEnv() {
@@ -342,6 +348,9 @@ function registerMocks(): TestMocks {
     recommendationRepo: new MockRecommendationRepository(),
     searchProvider: new MockSearchProvider(),
     customerResolver: new MockCustomerResolver(),
+    paymentProviderFactory: new MockPaymentProviderFactory(),
+    paymentCapturerFactory: new MockPaymentCapturerFactory(),
+    paymentVerifierFactory: new MockPaymentVerifierFactory(),
   };
 
   // Infrastructure
@@ -367,6 +376,9 @@ function registerMocks(): TestMocks {
 
   // Checkout
   container.register(TOKENS.PaymentProvider, { useValue: mocks.paymentProvider });
+  container.register(TOKENS.PaymentProviderFactory, { useValue: mocks.paymentProviderFactory });
+  container.register(TOKENS.PaymentCapturerFactory, { useValue: mocks.paymentCapturerFactory });
+  container.register(TOKENS.PaymentVerifierFactory, { useValue: mocks.paymentVerifierFactory });
   container.register(TOKENS.CheckoutRepository, { useValue: mocks.checkoutRepo });
   container.register(TOKENS.PromoCodeValidator, { useValue: mocks.promoCodeValidator });
   container.register(TOKENS.CartValidator, { useValue: mocks.cartValidator });

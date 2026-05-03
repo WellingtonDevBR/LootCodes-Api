@@ -1,7 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { TOKENS } from '../../../di/tokens.js';
 import type { ICheckoutRepository } from '../../ports/checkout-repository.port.js';
-import type { IPaymentProvider } from '../../ports/payment-provider.port.js';
+import type { IPaymentProviderFactory, PaymentProviderName } from '../../ports/payment-provider-factory.port.js';
 import { NotFoundError, ForbiddenError } from '../../errors/domain-errors.js';
 import { createLogger } from '../../../shared/logger.js';
 
@@ -11,7 +11,7 @@ const logger = createLogger('cancel-checkout-use-case');
 export class CancelCheckoutUseCase {
   constructor(
     @inject(TOKENS.CheckoutRepository) private checkoutRepo: ICheckoutRepository,
-    @inject(TOKENS.PaymentProvider) private paymentProvider: IPaymentProvider,
+    @inject(TOKENS.PaymentProviderFactory) private providerFactory: IPaymentProviderFactory,
   ) {}
 
   async execute(orderId: string, userId?: string): Promise<void> {
@@ -26,7 +26,12 @@ export class CancelCheckoutUseCase {
 
     const pid = existingOrder.provider_payment_id;
     if (typeof pid === 'string' && pid.length > 0) {
-      await this.paymentProvider.cancelPayment(pid);
+      const providerName: PaymentProviderName =
+        typeof existingOrder.payment_provider === 'string' && existingOrder.payment_provider.toLowerCase() === 'paypal'
+          ? 'paypal'
+          : 'stripe';
+      const provider = this.providerFactory.getProvider(providerName);
+      await provider.cancelPayment(pid);
     }
 
     await this.checkoutRepo.cancelOrder(orderId);
