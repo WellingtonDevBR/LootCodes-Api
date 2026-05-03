@@ -51,7 +51,16 @@ export async function buildApp(): Promise<FastifyInstance> {
     origin: corsOriginValidator(origins),
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['authorization', 'content-type', 'x-requested-with', 'x-requested-by', 'x-internal-secret', 'x-guest-token', 'stripe-signature'],
+    allowedHeaders: [
+      'authorization',
+      'content-type',
+      'x-requested-with',
+      'x-requested-by',
+      'x-internal-secret',
+      'x-guest-token',
+      'x-order-access-token',
+      'stripe-signature',
+    ],
   });
 
   await app.register(helmet, {

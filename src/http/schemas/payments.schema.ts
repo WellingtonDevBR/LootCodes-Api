@@ -6,6 +6,8 @@ export const verifyPaymentBodySchema = {
     order_id: { type: 'string', format: 'uuid' },
     recaptcha_token: { type: 'string' },
     recaptcha_unavailable: { type: 'boolean' },
+    /** Reserved for Enterprise mobile routing parity; optional */
+    recaptcha_platform: { type: 'string', maxLength: 16 },
     session_id: { type: 'string', maxLength: 128 },
     fingerprint_hash: { type: 'string', maxLength: 128 },
   },

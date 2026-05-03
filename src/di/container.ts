@@ -119,6 +119,7 @@ import { ValidateAccessTokenUseCase } from '../core/use-cases/orders/validate-ac
 import { GenerateAccessTokenUseCase } from '../core/use-cases/orders/generate-access-token.use-case.js';
 import { RefreshAccessTokenUseCase } from '../core/use-cases/orders/refresh-access-token.use-case.js';
 import { ClaimGuestOrderUseCase } from '../core/use-cases/orders/claim-guest-order.use-case.js';
+import { GetOrderVerificationTicketUseCase } from '../core/use-cases/orders/get-order-verification-ticket.use-case.js';
 
 // --- Key delivery use cases ---
 import { GetKeysForOrderUseCase } from '../core/use-cases/key-delivery/get-keys-for-order.use-case.js';
@@ -427,6 +428,7 @@ container.register(UC_TOKENS.ValidateAccessToken, { useClass: ValidateAccessToke
 container.register(UC_TOKENS.GenerateAccessToken, { useClass: GenerateAccessTokenUseCase });
 container.register(UC_TOKENS.RefreshAccessToken, { useClass: RefreshAccessTokenUseCase });
 container.register(UC_TOKENS.ClaimGuestOrder, { useClass: ClaimGuestOrderUseCase });
+container.register(UC_TOKENS.GetOrderVerificationTicket, { useClass: GetOrderVerificationTicketUseCase });
 
 // --- Key Delivery Use Cases ---
 container.register(UC_TOKENS.GetKeysForOrder, { useClass: GetKeysForOrderUseCase });

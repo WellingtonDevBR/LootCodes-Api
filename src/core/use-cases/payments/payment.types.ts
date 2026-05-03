@@ -2,6 +2,10 @@ export interface VerifyPaymentDto {
   payment_intent_id: string;
   order_id?: string;
   recaptcha_token?: string;
+  /** When true and no token, Edge treats as reCAPTCHA genuinely unavailable — elevated risk penalties apply */
+  recaptcha_unavailable?: boolean;
+  /** Optional client hint (`ios` | `android`) for future Enterprise mobile key routing; web omits */
+  recaptcha_platform?: string;
   session_id?: string;
   fingerprint_hash?: string;
 }
@@ -28,6 +32,7 @@ export interface ProviderPaymentStatus {
   status: 'fulfilled' | 'processing' | 'requires_action' | 'canceled' | 'error';
   order_id?: string;
   message?: string;
+  card_last4?: string | null;
 }
 
 /**
@@ -55,14 +60,20 @@ export interface PaymentVerificationResult {
   order_number?: string;
   message?: string;
   error?: string;
+  /** Mirrors Edge responses (e.g. RECAPTCHA_REQUIRED) */
+  code?: string;
   ticket_number?: string;
   access_token?: string;
   guest_email?: string;
   keys_assigned?: number;
   total_keys?: number;
   security_hold?: boolean;
+  /** True when escalated for medium/high risk manual review (not first-time-ID path). Mirrors Edge payment-verification. */
+  security_review_required?: boolean;
   funding_source?: string | null;
   processing_reason?: string;
+  /** Card last4 when available from Stripe (hold / UX parity with Edge) */
+  card_last4?: string | null;
 }
 
 export interface FulfillmentResult {

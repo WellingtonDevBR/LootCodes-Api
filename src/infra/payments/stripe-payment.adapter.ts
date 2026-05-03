@@ -12,12 +12,21 @@ import { getStripeClient } from './stripe-client.js';
 const logger = createLogger('stripe-payment-provider');
 
 function mapIntent(intent: Stripe.PaymentIntent): PaymentIntent {
+  let card_last4: string | null = null;
+  const lc = intent.latest_charge;
+  if (typeof lc === 'object' && lc !== null && !Array.isArray(lc)) {
+    const charge = lc as Stripe.Charge;
+    const pmd = charge.payment_method_details?.card;
+    card_last4 = pmd?.last4 ?? null;
+  }
+
   return {
     id: intent.id,
     client_secret: intent.client_secret ?? '',
     status: intent.status,
     amount_cents: intent.amount,
     currency: intent.currency.toUpperCase(),
+    card_last4,
   };
 }
 
@@ -75,7 +84,9 @@ export class StripePaymentAdapter implements IPaymentProvider {
   async getPaymentIntent(intentId: string): Promise<PaymentIntent> {
     const stripe = getStripeClient();
     try {
-      const intent = await stripe.paymentIntents.retrieve(intentId);
+      const intent = await stripe.paymentIntents.retrieve(intentId, {
+        expand: ['latest_charge'],
+      });
       return mapIntent(intent);
     } catch (err: unknown) {
       if (err instanceof Stripe.errors.StripeError) {

@@ -51,4 +51,14 @@ export class SupabaseCardChallengeRepository implements ICardChallengeRepository
     });
     return { ok: true };
   }
+
+  async hasSucceededOrderCardVerification(orderId: string): Promise<boolean> {
+    if (!orderId) return false;
+    const rows = await this.db.query<{ id: string }>('card_verifications', {
+      select: 'id',
+      eq: [['order_id', orderId], ['status', 'succeeded']],
+      limit: 1,
+    });
+    return rows.length > 0;
+  }
 }

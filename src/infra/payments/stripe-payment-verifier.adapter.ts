@@ -19,26 +19,28 @@ export class StripePaymentVerifierAdapter implements IPaymentVerifier {
 
       const intent = await this.paymentProvider.getPaymentIntent(dto.payment_intent_id);
 
+      const last4 = intent.card_last4 ?? null;
+
       switch (intent.status) {
         case 'succeeded':
-          return { status: 'fulfilled', order_id: dto.order_id };
+          return { status: 'fulfilled', order_id: dto.order_id, card_last4: last4 };
 
         case 'processing':
-          return { status: 'processing', order_id: dto.order_id, message: 'Payment is still processing' };
+          return { status: 'processing', order_id: dto.order_id, message: 'Payment is still processing', card_last4: last4 };
 
         case 'requires_action':
         case 'requires_confirmation':
-          return { status: 'requires_action', order_id: dto.order_id, message: 'Additional authentication required' };
+          return { status: 'requires_action', order_id: dto.order_id, message: 'Additional authentication required', card_last4: last4 };
 
         case 'requires_capture':
-          return { status: 'requires_action', order_id: dto.order_id, message: 'Payment authorized, awaiting capture' };
+          return { status: 'requires_action', order_id: dto.order_id, message: 'Payment authorized, awaiting capture', card_last4: last4 };
 
         case 'canceled':
-          return { status: 'canceled', order_id: dto.order_id, message: 'Payment was canceled' };
+          return { status: 'canceled', order_id: dto.order_id, message: 'Payment was canceled', card_last4: last4 };
 
         default:
           logger.warn('Unexpected payment intent status', { status: intent.status, paymentIntentId: dto.payment_intent_id });
-          return { status: 'error', order_id: dto.order_id, message: 'Unexpected payment status' };
+          return { status: 'error', order_id: dto.order_id, message: 'Unexpected payment status', card_last4: last4 };
       }
     } catch (err: unknown) {
       logger.error('Payment verification failed', err, { paymentIntentId: dto.payment_intent_id });

@@ -653,6 +653,9 @@ export class MockCardChallengeRepository implements ICardChallengeRepository {
   }
   async verify(_challengeId: string, _dto: VerifyChallengeDto): Promise<VerifyChallengeResult> { return { verified: true, attempts_remaining: 2 }; }
   async chooseId(_challengeId: string): Promise<ChooseIdResult> { return { ok: true }; }
+  async hasSucceededOrderCardVerification(_orderId: string): Promise<boolean> {
+    return false;
+  }
 }
 
 export class MockMicroAuthProvider implements IMicroAuthProvider {

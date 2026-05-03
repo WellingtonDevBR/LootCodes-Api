@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { container } from 'tsyringe';
 import { UC_TOKENS, TOKENS } from '../../di/tokens.js';
 import type { GetOrderDetailUseCase } from '../../core/use-cases/orders/get-order-detail.use-case.js';
@@ -13,6 +13,12 @@ import type { GetKeysForOrderItemUseCase } from '../../core/use-cases/key-delive
 import type { RevealKeyUseCase } from '../../core/use-cases/key-delivery/reveal-key.use-case.js';
 import type { CheckKeyViewedUseCase } from '../../core/use-cases/key-delivery/check-key-viewed.use-case.js';
 import type { VerifyPaymentForAccessUseCase } from '../../core/use-cases/key-delivery/verify-payment-for-access.use-case.js';
+import type {
+  GetOrderVerificationTicketUseCase,
+  OrderVerificationTicketQueryType,
+} from '../../core/use-cases/orders/get-order-verification-ticket.use-case.js';
+import type { IAuthProvider } from '../../core/ports/auth.port.js';
+import { AuthenticationError } from '../../core/errors/domain-errors.js';
 import { authGuard } from '../middleware/auth.guard.js';
 import { buildRequestContext } from '../middleware/request-context.js';
 import {
@@ -28,6 +34,7 @@ import {
   claimGuestOrderBodySchema,
   logKeyViewBodySchema,
   logAccessAttemptBodySchema,
+  verificationTicketQuerystringSchema,
 } from '../schemas/orders.schema.js';
 
 interface AuthUser {
@@ -37,6 +44,15 @@ interface AuthUser {
 
 function getAuthUser(request: unknown): AuthUser {
   return (request as Record<string, unknown>).authUser as AuthUser;
+}
+
+/** Matches `order_access_tokens` validation; not logged in URL (use header, not query). */
+const ORDER_ACCESS_TOKEN_HEADER = 'x-order-access-token';
+
+function readGuestOrderAccessToken(request: FastifyRequest): string | undefined {
+  const raw = request.headers[ORDER_ACCESS_TOKEN_HEADER];
+  if (typeof raw === 'string' && raw.trim().length > 0) return raw.trim();
+  return undefined;
 }
 
 export async function orderRoutes(app: FastifyInstance) {
@@ -328,39 +344,49 @@ export async function orderRoutes(app: FastifyInstance) {
     },
   );
 
-  app.get<{ Params: { id: string }; Querystring: { type?: string } }>(
+  app.get<{ Params: { id: string }; Querystring: { type?: OrderVerificationTicketQueryType } }>(
     '/:id/verification-ticket',
     {
       schema: {
         params: orderIdParamsSchema,
-        querystring: {
-          type: 'object',
-          properties: {
-            type: { type: 'string', enum: ['id_verification', 'security_verification', 'all'] },
-          },
-        },
+        querystring: verificationTicketQuerystringSchema,
       },
     },
     async (request, reply) => {
-      const ticketRepo = container.resolve<import('../../core/ports/support-ticket-repository.port.js').ISupportTicketRepository>(TOKENS.SupportTicketRepository);
       const { id } = request.params;
-      const queryType = request.query.type ?? 'all';
-      const ticketTypes = queryType === 'id_verification'
-        ? ['id_verification']
-        : queryType === 'security_verification'
-          ? ['security_verification']
-          : ['id_verification', 'security_verification'];
+      const authHeader = request.headers.authorization;
+      let sessionUserId: string | undefined;
 
-      const ticket = await ticketRepo.findVerificationTicketForOrder(id, ticketTypes);
-      if (!ticket) return reply.send({ ticket: null });
-      return reply.send({
-        ticket: {
-          id: ticket.id,
-          ticket_number: ticket.ticket_number,
-          status: ticket.status,
-          ticket_type: ticket.ticket_type,
-        },
+      if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+        const rawJwt = authHeader.slice(7).trim();
+        if (rawJwt.length > 0) {
+          const authProvider = container.resolve<IAuthProvider>(TOKENS.AuthProvider);
+          const authUser = await authProvider.getUserByToken(rawJwt);
+          if (!authUser) {
+            throw new AuthenticationError('Invalid or expired token');
+          }
+          sessionUserId = authUser.id;
+        }
+      }
+
+      const orderAccessToken = readGuestOrderAccessToken(request);
+
+      if (!sessionUserId && !orderAccessToken) {
+        throw new AuthenticationError('Missing credentials');
+      }
+
+      const uc = container.resolve<GetOrderVerificationTicketUseCase>(UC_TOKENS.GetOrderVerificationTicket);
+      const queryType: OrderVerificationTicketQueryType = request.query.type ?? 'all';
+
+      const ticket = await uc.execute({
+        orderId: id,
+        sessionUserId,
+        orderAccessToken,
+        queryType,
       });
+
+      if (!ticket) return reply.send({ ticket: null });
+      return reply.send({ ticket });
     },
   );
 }

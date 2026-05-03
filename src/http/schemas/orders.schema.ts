@@ -112,3 +112,11 @@ export const refreshAccessTokenBodySchema = {
   },
   additionalProperties: false,
 } as const;
+
+export const verificationTicketQuerystringSchema = {
+  type: 'object',
+  properties: {
+    type: { type: 'string', enum: ['id_verification', 'security_verification', 'all'] },
+  },
+  additionalProperties: false,
+} as const;

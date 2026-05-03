@@ -10,6 +10,8 @@ export interface PaymentIntent {
   status: string;
   amount_cents: number;
   currency: string;
+  /** Present when Stripe expanded `latest_charge` and card details exist. */
+  card_last4?: string | null;
 }
 
 export interface IPaymentProvider {

@@ -121,6 +121,7 @@ export const UC_TOKENS = {
   GenerateAccessToken: Symbol.for('GenerateAccessTokenUseCase'),
   RefreshAccessToken: Symbol.for('RefreshAccessTokenUseCase'),
   ClaimGuestOrder: Symbol.for('ClaimGuestOrderUseCase'),
+  GetOrderVerificationTicket: Symbol.for('GetOrderVerificationTicketUseCase'),
 
   // Key delivery use cases
   GetKeysForOrder: Symbol.for('GetKeysForOrderUseCase'),

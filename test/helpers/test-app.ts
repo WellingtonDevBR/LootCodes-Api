@@ -154,6 +154,7 @@ import { GetUserOrdersUseCase } from '../../src/core/use-cases/orders/get-user-o
 import { GetUserOrdersForSupportUseCase } from '../../src/core/use-cases/orders/get-user-orders-for-support.use-case.js';
 import { ValidateAccessTokenUseCase } from '../../src/core/use-cases/orders/validate-access-token.use-case.js';
 import { ClaimGuestOrderUseCase } from '../../src/core/use-cases/orders/claim-guest-order.use-case.js';
+import { GetOrderVerificationTicketUseCase } from '../../src/core/use-cases/orders/get-order-verification-ticket.use-case.js';
 
 // Key delivery use cases
 import { GetKeysForOrderUseCase } from '../../src/core/use-cases/key-delivery/get-keys-for-order.use-case.js';
@@ -439,6 +440,7 @@ function registerMocks(): TestMocks {
   container.register(UC_TOKENS.GetUserOrdersForSupport, { useClass: GetUserOrdersForSupportUseCase });
   container.register(UC_TOKENS.ValidateAccessToken, { useClass: ValidateAccessTokenUseCase });
   container.register(UC_TOKENS.ClaimGuestOrder, { useClass: ClaimGuestOrderUseCase });
+  container.register(UC_TOKENS.GetOrderVerificationTicket, { useClass: GetOrderVerificationTicketUseCase });
 
   // Key delivery use cases
   container.register(UC_TOKENS.GetKeysForOrder, { useClass: GetKeysForOrderUseCase });

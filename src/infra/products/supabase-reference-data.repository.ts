@@ -17,13 +17,14 @@ interface PlatformRow {
   platform_families?: { id: string; name: string; slug: string; code: string } | null;
 }
 
-interface PlatformWithFamilyRow {
+/** Supabase nests FK embed under the related table name `platform_families`, not `family`. */
+interface PlatformNavRowFromDb {
   id: string;
   name: string;
   slug: string;
   code: string;
   icon_url: string | null;
-  family: {
+  platform_families: {
     id: string;
     name: string;
     slug: string;
@@ -100,24 +101,31 @@ export class SupabaseReferenceDataRepository implements IReferenceDataRepository
   async getPlatformNavItemsWithVariants(): Promise<PlatformNavItemGrouped[]> {
     logger.debug('Getting grouped platform nav items with variant filter');
 
-    const rows = await this.db.query<PlatformWithFamilyRow>('product_platforms', {
+    const rowsRaw = await this.db.query<PlatformNavRowFromDb>('product_platforms', {
       select: 'id, name, slug, code, icon_url, platform_families!left(id, name, slug, code, icon_url, display_order), product_variants!inner(id)',
       order: { column: 'name', ascending: true },
     });
 
-    const familyMap = new Map<string, {
-      family: NonNullable<PlatformWithFamilyRow['family']>;
-      children: PlatformWithFamilyRow[];
-    }>();
-    const standalone: PlatformWithFamilyRow[] = [];
+    // `product_variants!inner` multiplies platforms that have multiple active variants; collapse to one row per platform id.
+    const uniqueByPlatform = new Map<string, PlatformNavRowFromDb>();
+    for (const row of rowsRaw) {
+      if (!uniqueByPlatform.has(row.id)) uniqueByPlatform.set(row.id, row);
+    }
 
-    for (const row of rows) {
-      if (row.family?.id) {
-        const existing = familyMap.get(row.family.id);
+    const familyMap = new Map<string, {
+      family: NonNullable<PlatformNavRowFromDb['platform_families']>;
+      children: PlatformNavRowFromDb[];
+    }>();
+    const standalone: PlatformNavRowFromDb[] = [];
+
+    for (const row of uniqueByPlatform.values()) {
+      const fam = row.platform_families;
+      if (fam?.id) {
+        const existing = familyMap.get(fam.id);
         if (existing) {
           existing.children.push(row);
         } else {
-          familyMap.set(row.family.id, { family: row.family, children: [row] });
+          familyMap.set(fam.id, { family: fam, children: [row] });
         }
       } else {
         standalone.push(row);
@@ -153,7 +161,7 @@ export class SupabaseReferenceDataRepository implements IReferenceDataRepository
             name: c.name,
             slug: c.slug,
             code: c.code,
-            icon_url: c.icon_url,
+            icon_url: c.icon_url ?? family.icon_url,
           })),
         });
       }

@@ -12,4 +12,9 @@ export interface ICardChallengeRepository {
   create(dto: StartChallengeDto): Promise<CardChallenge>;
   verify(challengeId: string, dto: VerifyChallengeDto): Promise<VerifyChallengeResult>;
   chooseId(challengeId: string): Promise<ChooseIdResult>;
+  /**
+   * True when `card_verifications` has a succeeded row for the order —
+   * same source-of-truth as Edge `payment-verification` (`hasSucceededCardChallenge`).
+   */
+  hasSucceededOrderCardVerification(orderId: string): Promise<boolean>;
 }
