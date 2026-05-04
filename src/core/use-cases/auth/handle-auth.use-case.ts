@@ -403,11 +403,12 @@ export class HandleAuthUseCase {
       throw new SecurityVerificationError('Security verification failed');
     }
 
-    if (!isAssessmentAcceptable(assessment, 0.5)) {
+    if (!isAssessmentAcceptable(assessment, 0.3)) {
       logger.warn('reCAPTCHA score too low', {
         requestId: ctx.requestId,
         email: maskEmail(dto.email),
         score: assessment.score,
+        action: dto.action,
       });
       throw new SecurityVerificationError('Your request appears suspicious. Please try again.');
     }
