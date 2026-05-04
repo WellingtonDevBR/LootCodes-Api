@@ -125,7 +125,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
           required: ['session_id'],
           properties: {
             session_id: { type: 'string', minLength: 1 },
-            user_id: { type: 'string' },
+            user_id: { type: ['string', 'null'] },
             user_agent: { type: 'string' },
             merge_anonymous: { type: 'boolean' },
             auto_consolidate: { type: 'boolean' },
@@ -152,6 +152,8 @@ export async function analyticsRoutes(app: FastifyInstance) {
             ? reqCtx.clientIP
             : undefined;
 
+      const safeUserId = typeof user_id === 'string' && user_id.length > 0 ? user_id : undefined;
+
       await uc.execute(
         {
           events: [
@@ -159,7 +161,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
               action: 'session-upsert',
               payload: {
                 session_id,
-                user_id,
+                user_id: safeUserId,
                 merge_anonymous,
                 auto_consolidate,
                 user_agent: bodyUa ?? (typeof reqCtx.userAgent === 'string' ? reqCtx.userAgent : undefined),
@@ -174,7 +176,7 @@ export async function analyticsRoutes(app: FastifyInstance) {
           ],
         },
         session_id,
-        typeof user_id === 'string' && user_id.length > 0 ? user_id : undefined,
+        safeUserId,
       );
       return reply.code(204).send();
     },

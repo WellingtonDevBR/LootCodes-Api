@@ -14,7 +14,7 @@ export class SupabaseSessionRepository implements ISessionRepository {
     if (fingerprint.length > 0) {
       /** Fingerprint linkage overload (no merge flags in signature). */
       return this.db.rpc<UserSession>('upsert_user_session', {
-        p_user_id: params.user_id ?? null,
+        p_user_id: params.user_id && params.user_id.length > 0 ? params.user_id : null,
         p_session_id: params.session_id,
         p_ip_address: inetColumnOrNull(params.ip_address),
         p_country_code: null,
@@ -27,7 +27,7 @@ export class SupabaseSessionRepository implements ISessionRepository {
 
     return this.db.rpc<UserSession>('upsert_user_session', {
       p_session_id: params.session_id,
-      p_user_id: params.user_id ?? null,
+      p_user_id: params.user_id && params.user_id.length > 0 ? params.user_id : null,
       p_ip_address: inetColumnOrNull(params.ip_address),
       p_country_code: null,
       p_city: null,

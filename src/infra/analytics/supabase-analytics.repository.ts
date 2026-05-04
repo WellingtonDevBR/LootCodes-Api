@@ -244,7 +244,7 @@ export class SupabaseAnalyticsRepository implements IAnalyticsRepository {
 
       p_session_id: dto.session_id,
 
-      p_user_id: dto.user_id ?? null,
+      p_user_id: dto.user_id && dto.user_id.length > 0 ? dto.user_id : null,
 
       p_ip_address: inetColumnOrNull(dto.ip_address ?? undefined),
 
