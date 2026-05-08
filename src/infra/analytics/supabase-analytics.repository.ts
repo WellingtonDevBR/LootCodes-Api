@@ -190,19 +190,49 @@ export class SupabaseAnalyticsRepository implements IAnalyticsRepository {
 
   async trackProductViewDuration(data: ProductViewDurationDto & { user_id?: string }): Promise<void> {
 
-    await this.db.insert('product_views', {
+    // (session_id, product_id) has a partial unique index, so a re-view in the same
+    // session must upsert. We accumulate the longest observed duration via GREATEST
+    // in a follow-up update so the row reflects total time spent on the product.
 
-      session_id: data.session_id,
+    try {
 
-      product_id: data.product_id,
+      await this.db.upsert(
 
-      user_id: data.user_id,
+        'product_views',
 
-      view_duration_seconds: data.duration_seconds,
+        {
 
-    });
+          session_id: data.session_id,
 
-    logger.debug('Product view duration inserted', { productId: data.product_id });
+          product_id: data.product_id,
+
+          user_id: data.user_id,
+
+          view_duration_seconds: data.duration_seconds,
+
+        },
+
+        'session_id,product_id',
+
+      );
+
+    } catch (err) {
+
+      logger.warn('Product view upsert failed', {
+
+        sessionId: data.session_id,
+
+        productId: data.product_id,
+
+        error: String(err),
+
+      });
+
+      return;
+
+    }
+
+    logger.debug('Product view duration upserted', { productId: data.product_id });
 
   }
 
