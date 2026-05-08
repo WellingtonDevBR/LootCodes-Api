@@ -31,14 +31,17 @@ export interface LibraryProductDetails {
   name: string;
   slug: string;
   image_url: string | null;
+  /** Convenience: first variant face_value, kept on product for legacy storefront usage. */
   face_value?: string | null;
+  /** Convenience: true if any variant is purchasable. */
   in_stock?: boolean | null;
   release_date?: string | null;
   product_variants?: Array<{
     id: string;
     price_usd: number;
     retail_price_usd?: number | null;
-    region_id: string;
+    face_value?: string | null;
+    in_stock?: boolean;
     product_platforms: { name: string; code: string } | null;
     product_regions: { name: string; code: string } | null;
   }>;
