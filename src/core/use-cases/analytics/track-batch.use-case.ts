@@ -36,7 +36,8 @@ export class TrackBatchUseCase {
       if (!evt.action || typeof evt.action !== 'string') continue;
       const payload = evt.payload ?? {};
 
-      const resolvedUserId = userId ?? (payload.user_id as string | undefined);
+      const rawUserId = userId ?? (payload.user_id as string | undefined);
+      const resolvedUserId = rawUserId && rawUserId.length > 0 ? rawUserId : undefined;
       const resolvedSessionId = (payload.session_id as string) ?? sessionId;
 
       switch (evt.action) {
