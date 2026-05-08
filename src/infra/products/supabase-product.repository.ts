@@ -61,10 +61,25 @@ export class SupabaseProductRepository implements IProductRepository {
   }
 
   async getGallery(productId: string): Promise<GalleryItem[]> {
-    return this.db.query<GalleryItem>('product_gallery', {
+    interface ProductImageRow {
+      id: string;
+      url: string;
+      thumbnail_url: string | null;
+      display_order: number;
+      image_type: string;
+    }
+    const rows = await this.db.query<ProductImageRow>('product_images', {
+      select: 'id,url,thumbnail_url,display_order,image_type',
       eq: [['product_id', productId]],
-      order: { column: 'sort_order', ascending: true },
+      order: { column: 'display_order', ascending: true },
     });
+    return rows.map((row) => ({
+      id: row.id,
+      url: row.url,
+      type: row.image_type === 'video' ? 'video' : 'image',
+      thumbnail_url: row.thumbnail_url ?? undefined,
+      sort_order: row.display_order,
+    }));
   }
 
   async getFeatured(): Promise<FeaturedProduct[]> {
